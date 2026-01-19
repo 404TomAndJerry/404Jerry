@@ -1,0 +1,62 @@
+###################################################
+#  여기는 dev(로컬)입니다. 여기에서 자유롭게 사용하세요~ #
+###################################################
+
+spring:
+  application:
+    name: 404Jerry
+
+  data:
+    redis:
+      host: localhost
+      port: 6379
+
+  # OAuth2
+  security:
+    oauth2:
+      #TODO 필요한 것들 추가하기
+      client:
+
+  # JPA & Hibernate 설정
+  jpa:
+    hibernate:
+    # 새로 만들고 삭제, 개발 중엔 update, 운영은 validate 추천
+    ddl-auto: create-drop
+    properties:
+      hibernate:
+        # MySQL 9.x 호환
+        dialect: org.hibernate.dialect.MySQLDialect
+        format_sql: true
+        show_sql: false
+        use_sql_comments: true
+        jdbc:
+          time_zone: Asia/Seoul
+          batch_versioned_data: true
+          batch_size: 30
+        order_inserts: true
+        order_updates: true
+    # OSIV 비활성화 (백엔드 API 추천)
+    open-in-view: false
+
+  # MYSQL_DataSource 설정 (MySQL 9.5.0)
+  datasource:
+    url: ${DB_URL}
+    username: ${DB_USER}
+    password: ${DB_PASSWORD}
+    driver-class-name: com.mysql.cj.jdbc.Driver
+
+  # 스프링 서버 설정
+  server:
+    port: 8080
+    servlet:
+      context-path:
+      encoding:
+        charset: UTF-8
+        enabled: true
+        force: true
+
+  logging:
+    level:
+      root: info
+      # 개발 중에는 쿼리 로그를 상세히!
+      org.hibernate.SQL: debug

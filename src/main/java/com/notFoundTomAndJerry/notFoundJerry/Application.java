@@ -1,4 +1,4 @@
-package com._TomAndJerry._Jerry;
+package com.notFoundTomAndJerry.notFoundJerry;
 
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;

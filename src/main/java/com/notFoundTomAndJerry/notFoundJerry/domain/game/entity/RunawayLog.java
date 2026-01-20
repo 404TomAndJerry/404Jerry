@@ -10,7 +10,11 @@ import org.springframework.data.jpa.domain.support.AuditingEntityListener;
 
 import java.time.LocalDateTime;
 
-// 탈주 로그 엔티티 게임 중 특정 사용자의 탈주 시점 기록 (히스토리 및 통계용 데이터)
+/**
+ * 탈주 로그 엔티티 게임 중 특정 사용자의 탈주 시점 기록
+ * - 히스토리
+ * - 통계용 데이터
+ */
 @Entity
 @Table(name = "runaway_logs")
 @Getter

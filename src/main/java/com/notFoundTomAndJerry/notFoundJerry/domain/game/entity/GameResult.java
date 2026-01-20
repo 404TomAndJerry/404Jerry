@@ -24,7 +24,7 @@ import java.time.LocalDateTime;
 @Getter
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
 @EntityListeners(AuditingEntityListener.class)
-public class GameResultEntity {
+public class GameResult {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
@@ -52,7 +52,7 @@ public class GameResultEntity {
     private LocalDateTime updatedAt;
 
     @Builder
-    public GameResultEntity(Long gameId, Long userId, PlayerRole role, Boolean isWinner) {
+    public GameResult(Long gameId, Long userId, PlayerRole role, Boolean isWinner) {
         this.gameId = gameId;
         this.userId = userId;
         this.role = role;

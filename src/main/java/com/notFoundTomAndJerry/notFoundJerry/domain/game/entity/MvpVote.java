@@ -10,7 +10,9 @@ import org.springframework.data.jpa.domain.support.AuditingEntityListener;
 
 import java.time.LocalDateTime;
 
-// MVP 투표 엔티티 게임 종료 후 MVP 투표 기록
+/**
+ * MVP 투표 엔티티 게임 종료 후 MVP 투표 기록
+ */
 @Entity
 @Table(name = "mvp_votes",
         uniqueConstraints = {

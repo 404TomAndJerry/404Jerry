@@ -12,7 +12,9 @@ import org.springframework.data.jpa.domain.support.AuditingEntityListener;
 
 import java.time.LocalDateTime;
 
-// 게임 엔티티 방에서 실제로 시작된 게임 인스턴스를 나타냄
+/**
+ * 게임 엔티티 방에서 실제로 시작된 게임 인스턴스를 나타냄
+ */
 @Entity
 @Table(name = "games")
 @Getter

@@ -1,5 +1,6 @@
 package com.notFoundTomAndJerry.notFoundJerry.global.exception;
 
+import com.notFoundTomAndJerry.notFoundJerry.global.exception.dto.ErrorResponse;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;

@@ -60,6 +60,9 @@ dependencies {
     // Redisson (분산 락 등을 위해 사용)
     implementation 'org.redisson:redisson:3.27.0'
 
+    // Location
+    implementation 'org.hibernate.orm:hibernate-spatial'
+
     //테스트
     testImplementation 'org.springframework.boot:spring-boot-starter-test'
     testImplementation 'org.springframework.security:spring-security-test'

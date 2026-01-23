@@ -1,6 +1,7 @@
 package com.notFoundTomAndJerry.notFoundJerry.domain.auth.entity;
 
 import com.notFoundTomAndJerry.notFoundJerry.domain.auth.entity.enums.OAuthProvider;
+import com.notFoundTomAndJerry.notFoundJerry.domain.user.entity.User;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.EnumType;

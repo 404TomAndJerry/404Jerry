@@ -1,6 +1,6 @@
-package com.notFoundTomAndJerry.notFoundJerry.domain.auth.entity;
+package com.notFoundTomAndJerry.notFoundJerry.domain.user.entity;
 
-import com.notFoundTomAndJerry.notFoundJerry.domain.auth.entity.enums.UserStatus;
+import com.notFoundTomAndJerry.notFoundJerry.domain.user.entity.enums.UserStatus;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.EnumType;

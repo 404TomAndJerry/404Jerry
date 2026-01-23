@@ -1,12 +1,9 @@
 package com.notFoundTomAndJerry.notFoundJerry.domain.auth.entity;
 
-import com.notFoundTomAndJerry.notFoundJerry.domain.user.entity.User;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
-import jakarta.persistence.FetchType;
 import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
-import jakarta.persistence.ManyToOne;
 import jakarta.persistence.Table;
 import java.time.LocalDateTime;
 import lombok.AccessLevel;
@@ -25,8 +22,8 @@ public class RefreshToken {
   @GeneratedValue(strategy = GenerationType.IDENTITY)
   private Long id;
 
-  @ManyToOne(fetch = FetchType.LAZY, optional = false)
-  private User user;
+  @Column(nullable = false)
+  private Long userId; // 토큰 소유자 식별용
 
   @Column(nullable = false, length = 255)
   private String token;

@@ -115,8 +115,8 @@ public class Room {
         if (startTime != null && startTime.isBefore(LocalDateTime.now())) {
             throw new IllegalArgumentException("시작 시간은 현재 이후여야 합니다.");
         }
-        if (maxPlayers < 2) {
-            throw new IllegalArgumentException("최소 인원은 2명 이상이어야 합니다.");
+        if (maxPlayers < 6) {
+            throw new IllegalArgumentException("최소 인원은 6명 이상이어야 합니다.");
         }
         if (policeCount + thiefCount != maxPlayers) {
             throw new IllegalArgumentException("경찰 + 도둑 수는 정원과 일치해야 합니다.");

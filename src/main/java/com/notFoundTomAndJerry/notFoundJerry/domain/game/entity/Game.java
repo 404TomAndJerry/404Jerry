@@ -1,6 +1,7 @@
 package com.notFoundTomAndJerry.notFoundJerry.domain.game.entity;
 
 import com.notFoundTomAndJerry.notFoundJerry.domain.game.entity.enums.GameStatus;
+import com.notFoundTomAndJerry.notFoundJerry.global.exception.game.GameException;
 import jakarta.persistence.*;
 import lombok.AccessLevel;
 import lombok.Builder;
@@ -39,6 +40,9 @@ public class Game {
     @Column(name = "ended_at")
     private LocalDateTime endedAt;
 
+    @Column(name = "end_reason")
+    private String endReason;
+
     @CreatedDate
     @Column(name = "created_at", updatable = false)
     private LocalDateTime createdAt;
@@ -48,22 +52,33 @@ public class Game {
     private LocalDateTime updatedAt;
 
     @Builder
-    public Game(Long roomId, GameStatus status, LocalDateTime startedAt) {
+    public Game(Long roomId, GameStatus status, LocalDateTime startedAt, String endReason) {
         this.roomId = roomId;
-        this.status = status;
+        this.status = status != null ? status : GameStatus.WAITING;
         this.startedAt = startedAt;
+        this.endReason = endReason;
     }
 
     // 게임 시작
     public void start() {
+        if (this.status == GameStatus.RUNNING) {
+            throw new GameException.InvalidGameStateException("이미 진행 중인 게임입니다.");
+        }
+        if (this.status == GameStatus.FINISHED) {
+            throw new GameException.InvalidGameStateException("종료된 게임은 다시 시작할 수 없습니다.");
+        }
         this.status = GameStatus.RUNNING;
         this.startedAt = LocalDateTime.now();
     }
 
     // 게임 종료
-    public void finish() {
+    public void finish(String endReason) {
+        if (this.status != GameStatus.RUNNING) {
+            throw new GameException.InvalidGameStateException("진행 중인 게임만 종료할 수 있습니다.");
+        }
         this.status = GameStatus.FINISHED;
         this.endedAt = LocalDateTime.now();
+        this.endReason = endReason;
     }
 
     // 게임이 진행 중인지 확인

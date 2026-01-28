@@ -1,5 +1,6 @@
 package com.notFoundTomAndJerry.notFoundJerry.domain.game.dto.request;
 
+import com.notFoundTomAndJerry.notFoundJerry.domain.game.entity.enums.RoleAssignType;
 import jakarta.validation.constraints.NotNull;
 import lombok.AllArgsConstructor;
 import lombok.Getter;
@@ -19,7 +20,7 @@ public class GameStartRequest {
 
     // 역할 배치 방식 (RANDOM / MANUAL)
     @NotNull(message = "역할 배치 방식은 필수입니다.")
-    private String roleAssignment;
+    private RoleAssignType roleAssignment;
 
     // 경찰 비율 (RANDOM일 때 사용, 선택)
     private Double policeRatio;

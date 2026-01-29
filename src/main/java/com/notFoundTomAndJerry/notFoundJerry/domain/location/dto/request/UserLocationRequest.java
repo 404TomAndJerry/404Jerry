@@ -1,5 +1,6 @@
 package com.notFoundTomAndJerry.notFoundJerry.domain.location.dto.request;
 
+import lombok.AllArgsConstructor;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 
@@ -8,6 +9,7 @@ import lombok.NoArgsConstructor;
  */
 @Getter
 @NoArgsConstructor
+@AllArgsConstructor
 public class UserLocationRequest {
 
   private Double latitude;

@@ -7,5 +7,6 @@ import lombok.Getter;
 @AllArgsConstructor
 public class LocationRegionResponse {
 
+  // 좌표가 속한 행정구역 이름 반환
   private String regionName; // ex) 강남구
 }

@@ -22,7 +22,7 @@ public class ChatMessageDto {
 
   private Long id;
   private Long senderId;
-  private long roomId;
+  private Long roomId;
   private String message;
   @JsonSerialize(using = LocalDateTimeSerializer.class)
   @JsonDeserialize(using = LocalDateTimeDeserializer.class)

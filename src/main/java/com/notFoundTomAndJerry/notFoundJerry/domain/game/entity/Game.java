@@ -62,10 +62,10 @@ public class Game {
 
     // 게임 시작
     public void start() {
-        if (this.status == GameStatus.RUNNING) {
+        if (isRunning()) {
             throw new BusinessException(GameErrorCode.INVALID_GAME_STATE, "이미 진행 중인 게임입니다.");
         }
-        if (this.status == GameStatus.FINISHED) {
+        if (isFinished()) {
             throw new BusinessException(GameErrorCode.INVALID_GAME_STATE, "종료된 게임은 다시 시작할 수 없습니다.");
         }
         this.status = GameStatus.RUNNING;
@@ -74,7 +74,7 @@ public class Game {
 
     // 게임 종료
     public void finish(String endReason) {
-        if (this.status != GameStatus.RUNNING) {
+        if (!isRunning()) {
             throw new BusinessException(GameErrorCode.INVALID_GAME_STATE, "진행 중인 게임만 종료할 수 있습니다.");
         }
         this.status = GameStatus.FINISHED;

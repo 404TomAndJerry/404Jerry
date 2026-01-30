@@ -1,7 +1,10 @@
 package com.notFoundTomAndJerry.notFoundJerry.domain.chat;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.notFoundTomAndJerry.notFoundJerry.domain.chat.dto.ChatMessageDto;
 import com.notFoundTomAndJerry.notFoundJerry.domain.chat.entity.ChatMessage;
+import com.notFoundTomAndJerry.notFoundJerry.global.exception.BusinessException;
+import com.notFoundTomAndJerry.notFoundJerry.global.exception.CommonErrorCode;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.messaging.simp.SimpMessageSendingOperations;
@@ -19,17 +22,18 @@ public class RedisSubscriber {
   public void sendMessage(String publishMessage) {
     try {
       // 1. JSON 문자열 -> 자바 객체 변환
-      ChatMessage chatMessage = objectMapper.readValue(publishMessage, ChatMessage.class);
+      ChatMessageDto chatMessage = objectMapper.readValue(publishMessage, ChatMessageDto.class);
 
       // 2. 실제 구독자(클라이언트)에게 웹소켓으로 발송
       // Destination: /sub/chat/room/{roomId}
       messagingTemplate.convertAndSend(
-          "/sub/chat/room/" + chatMessage.getChatRoom(),
+          "/sub/chat/room/" + chatMessage.getId(),
           chatMessage
       );
 
     } catch (Exception e) {
       log.error("Redis 메시지 파싱 실패", e);
+      throw new BusinessException(CommonErrorCode.SERVER_ERROR, "Redis 메시지 파싱 실패");
     }
   }
 }

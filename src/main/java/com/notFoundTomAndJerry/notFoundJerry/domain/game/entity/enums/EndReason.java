@@ -11,8 +11,8 @@ package com.notFoundTomAndJerry.notFoundJerry.domain.game.entity.enums;
 public enum EndReason {
     ALL_THIEVES_CAUGHT("도둑팀 전원 체포", PlayerRole.POLICE),
     TIME_OVER("타임 오버", PlayerRole.THIEF),
-    HOST_FORCED("방장 강제 종료", PlayerRole.POLICE);
-    
+    HOST_FORCED("방장 강제 종료", null);
+
     private final String description;
     private final PlayerRole winner;
     

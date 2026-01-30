@@ -8,5 +8,6 @@ import lombok.Getter;
 @AllArgsConstructor
 public class LocationFilterResponse {
 
-  private List<Long> roomIds;
+  // 영역 내에 존재하는 유효한 location ID 목록 반환
+  private List<Long> locationIds;
 }

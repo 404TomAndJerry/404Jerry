@@ -59,6 +59,8 @@ dependencies {
     implementation 'org.springframework.boot:spring-boot-starter-data-redis'
     // Redisson (분산 락 등을 위해 사용)
     implementation 'org.redisson:redisson:3.27.0'
+    // Jackson 라이브러리가 jSON으로 변환
+    implementation 'com.fasterxml.jackson.datatype:jackson-datatype-jsr310'
 
     // Location
     implementation 'org.hibernate.orm:hibernate-spatial'

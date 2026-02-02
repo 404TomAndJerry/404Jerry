@@ -24,7 +24,7 @@ spring:
       ddl-auto: validate
     properties:
       hibernate:
-        # MySQL 9.x 호환
+        # MySQL 8.x 호환
         dialect: org.hibernate.dialect.MySQLDialect
         format_sql: true
         show_sql: false
@@ -38,7 +38,7 @@ spring:
     # OSIV 비활성화 (백엔드 API 추천)
     open-in-view: false
 
-  # MYSQL_DataSource 설정 (MySQL 9.5.0)
+  # MYSQL_DataSource 설정 (MySQL 8.0)
   datasource:
     url: ${DB_URL}
     username: ${DB_USER}

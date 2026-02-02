@@ -10,6 +10,9 @@ import org.springframework.data.repository.query.Param;
 
 public interface LocationRepository extends JpaRepository<Location, Long> {
 
+  // Room 생성 시 위치 존재 여부 및 유효성 검증
+  boolean existsByIdAndIsValidTrue(Long id);
+
   /**
    * 지도 영역(MBR) 내 방 ID 필터링
    * <pre>
@@ -18,11 +21,11 @@ public interface LocationRepository extends JpaRepository<Location, Long> {
    * </pre>
    */
   @Query(value = "SELECT id FROM locations l " +
-      "WHERE MBRContains(ST_GeomFromText(:envelope, 4326), l.point)",
+      "WHERE l.is_valid = true AND MBRContains(ST_GeomFromText(:envelope, 4326), l.point)",
       nativeQuery = true)
   List<Long> findIdsWithinBounds(@Param("envelope") String envelope);
 
-  // 특정 행정구역(구 단위) 명칭으로 위치 정보 조회
+  // 특정 행정구역(구 단위) 명칭으로 위치 정보 조회(유효할 경우)
   List<Location> findByRegionName(String regionName);
 
   /**
@@ -32,6 +35,7 @@ public interface LocationRepository extends JpaRepository<Location, Long> {
    * </pre>
    */
   @Query(value = "SELECT * FROM locations l " +
+      "WHERE l.is_valid = true " +
       "ORDER BY ST_Distance_Sphere(l.point, :point) ASC LIMIT 1",
       nativeQuery = true)
   Optional<Location> findNearestLocation(@Param("point") Point point);
@@ -40,8 +44,17 @@ public interface LocationRepository extends JpaRepository<Location, Long> {
   @Query(value = "SELECT *, ST_Distance_Sphere(point, :userPoint) AS distance " +
       "FROM locations " +
       "WHERE ST_Distance_Sphere(point, :userPoint) <= :radius " +
+      "AND is_valid = true " +
       "ORDER BY distance ASC",
       nativeQuery = true)
   List<Location> findLocationsWithinRadius(@Param("userPoint") Point userPoint,
       @Param("radius") Double radius);
+
+  // 특정 지점(사용자)과 특정 장소 사이의 거리 계산
+  @Query(value = "SELECT ST_Distance_Sphere(:userPoint, l.point) " +
+      "FROM locations l " +
+      "WHERE l.id = :locationId",
+      nativeQuery = true)
+  Double getDistanceBetween(@Param("userPoint") Object userPoint,
+      @Param("locationId") Long locationId);
 }

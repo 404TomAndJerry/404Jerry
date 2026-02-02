@@ -32,7 +32,7 @@ import org.springframework.data.jpa.domain.support.AuditingEntityListener;
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
 @Table(name = "chat_messages", indexes = {
     // 복합 인덱스로 성능 극대화
-    @Index(name = "idx_chatroom_createdat", columnList = "chat_room_id, createdAt")
+    @Index(name = "idx_chatroom_created_at", columnList = "chat_room_id, created_at")
 })
 @EntityListeners(AuditingEntityListener.class)
 public class ChatMessage {
@@ -57,7 +57,7 @@ public class ChatMessage {
   private String message;
 
   @CreatedDate
-  @Column(updatable = false)
+  @Column(name = "created_at", updatable = false)
   private LocalDateTime createdAt;
 
 }

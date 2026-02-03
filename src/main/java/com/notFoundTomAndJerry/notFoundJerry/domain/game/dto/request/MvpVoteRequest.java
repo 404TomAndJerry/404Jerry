@@ -1,5 +1,6 @@
 package com.notFoundTomAndJerry.notFoundJerry.domain.game.dto.request;
 
+import jakarta.validation.constraints.NotNull;
 import lombok.AllArgsConstructor;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
@@ -13,6 +14,10 @@ import lombok.NoArgsConstructor;
 @NoArgsConstructor
 @AllArgsConstructor
 public class MvpVoteRequest {
+
+    // 투표자 ID (TODO: JWT 인증 통합 시 제거하고 토큰에서 추출) 추후 JWT 인증 통합 시 제거
+    @NotNull(message = "투표자 ID는 필수입니다.")
+    private Long voterId;
 
     // 투표 대상 사용자 ID (null이면 스킵)
     private Long targetUserId;

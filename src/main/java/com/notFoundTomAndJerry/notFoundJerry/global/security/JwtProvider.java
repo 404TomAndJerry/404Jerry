@@ -14,6 +14,7 @@ import java.util.Collections;
 import java.util.Date;
 import java.util.List;
 import javax.crypto.SecretKey;
+import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
@@ -27,6 +28,7 @@ public class JwtProvider {
 
   private final SecretKey accSecretKey;
   private final SecretKey refSecretKey;
+  @Getter
   private final long accessTokenExpirationTime;
   private final long refreshTokenExpirationTime;
 
@@ -45,13 +47,12 @@ public class JwtProvider {
   }
 
   // Access Token 생성
-  public String createAccessToken(Long userId, String loginId, String nickname, ProviderType provider, String userCode) {
+  public String createAccessToken(Long userId, String email, String nickname, ProviderType provider) {
     return Jwts.builder()
-        .setSubject(String.valueOf(userId))
-        .claim("loginId", loginId)
-        .claim("nickname", nickname)
-        .claim("provider", provider)
-        .claim("userCode", userCode)
+        .setSubject(String.valueOf(userId)) // PK를 Subject로 설정
+        .claim("email", email)              // 이메일
+        .claim("nickname", nickname)        // 닉네임
+        .claim("provider", provider)        // 가입 경로
         .setIssuedAt(new Date())
         .setExpiration(new Date(System.currentTimeMillis() + accessTokenExpirationTime))
         .signWith(accSecretKey, SignatureAlgorithm.HS256)
@@ -59,26 +60,24 @@ public class JwtProvider {
   }
 
   // Refresh Token 생성
-  public String createRefreshToken(Long userId, String loginId, String userCode) {
+  public String createRefreshToken(Long userId) {
     return Jwts.builder()
         .setSubject(String.valueOf(userId))
-        .claim("loginId", loginId)
-        .claim("userCode", userCode)
         .setIssuedAt(new Date())
         .setExpiration(new Date(System.currentTimeMillis() + refreshTokenExpirationTime))
         .signWith(refSecretKey, SignatureAlgorithm.HS256)
         .compact();
   }
 
-  // ★ 추가된 메서드: 토큰에서 인증 정보(Authentication) 추출
+  // 토큰에서 인증 정보(Authentication) 추출
   public Authentication getAuthentication(String token) {
     Claims claims = getACCClaims(token);
     String userId = claims.getSubject();
 
-    // 권한은 ROLE_USER로 통일 (필요하면 클레임에서 꺼내오도록 수정)
+    // 권한은 ROLE_USER로 통일
     List<SimpleGrantedAuthority> authorities = Collections.singletonList(new SimpleGrantedAuthority("ROLE_USER"));
 
-    // Principal에 userId(PK)를 넣어서 컨트롤러에서 @AuthenticationPrincipal로 꺼내 쓸 수 있게 함
+    // Principal에 userId(PK)를 넣음
     return new UsernamePasswordAuthenticationToken(userId, "", authorities);
   }
 
@@ -108,10 +107,5 @@ public class JwtProvider {
 
   private Claims getACCClaims(String token) {
     return Jwts.parserBuilder().setSigningKey(accSecretKey).build().parseClaimsJws(token).getBody();
-  }
-
-  // Getter for Expiration Time (Service에서 사용하기 위해 추가)
-  public long getAccessTokenExpirationTime() {
-    return accessTokenExpirationTime;
   }
 }

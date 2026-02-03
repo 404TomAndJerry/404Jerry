@@ -2,13 +2,14 @@ package com.notFoundTomAndJerry.notFoundJerry.global.exception.domain;
 
 import com.notFoundTomAndJerry.notFoundJerry.global.exception.ApiCode;
 import lombok.AllArgsConstructor;
+import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpStatus;
 
 @AllArgsConstructor
 @Slf4j
+@Getter
 public enum ChatErrorCode implements ApiCode {
-
 
   // CHAT 도메인 추가
   CHAT_ROOM_NOT_FOUND(HttpStatus.NOT_FOUND.value(), 404, "채팅방을 찾을 수 없습니다."),

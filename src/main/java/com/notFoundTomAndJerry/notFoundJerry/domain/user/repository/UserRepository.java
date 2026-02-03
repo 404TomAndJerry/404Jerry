@@ -19,6 +19,9 @@ public interface UserRepository extends JpaRepository<User, Long> {
   // 닉네임 중복 체크용 (회원가입 / 정보 수정 시 중복 방지)
   boolean existsByNickname(String nickname);
 
+  // 이메일 중복 체크용 (회원가입 시 필요)
+  boolean existsByEmail(String email);
+
   // ID와 닉네임 골라서 조회
   @Query("SELECT u.id, u.nickname FROM User u WHERE u.id IN :ids")
   List<Object[]> findIdAndNicknames(@Param("ids") Collection<Long> ids);

@@ -1,11 +1,16 @@
 package com.notFoundTomAndJerry.notFoundJerry.global.config;
 
+import com.notFoundTomAndJerry.notFoundJerry.domain.chat.RedisSubscriber;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.data.redis.connection.RedisConnectionFactory;
 import org.springframework.data.redis.connection.lettuce.LettuceConnectionFactory;
 import org.springframework.data.redis.core.RedisTemplate;
+import org.springframework.data.redis.listener.ChannelTopic;
+import org.springframework.data.redis.listener.PatternTopic;
+import org.springframework.data.redis.listener.RedisMessageListenerContainer;
+import org.springframework.data.redis.listener.adapter.MessageListenerAdapter;
 import org.springframework.data.redis.serializer.GenericJackson2JsonRedisSerializer;
 import org.springframework.data.redis.serializer.StringRedisSerializer;
 
@@ -43,4 +48,30 @@ public class RedisConfig {
 
     return template;
   }
+  // RedisConfig 수정 (패턴 매칭)
+  @Bean
+  public RedisMessageListenerContainer redisMessageListenerContainer(
+      RedisConnectionFactory connectionFactory,
+      MessageListenerAdapter listenerAdapter
+  ) {
+    RedisMessageListenerContainer container = new RedisMessageListenerContainer();
+    container.setConnectionFactory(connectionFactory);
+
+    // "chat:room:*" 로 시작하는 모든 토픽의 메시지를 듣겠다!
+    container.addMessageListener(listenerAdapter, new PatternTopic("chat:room:*"));
+
+    return container;
+  }
+
+  @Bean
+  public MessageListenerAdapter listenerAdapter(RedisSubscriber subscriber) {
+    // RedisSubscriber의 "sendMessage" 메서드를 실행하라고 지정
+    return new MessageListenerAdapter(subscriber, "sendMessage");
+  }
+
+  @Bean
+  public ChannelTopic channelTopic() {
+    return new ChannelTopic("chat:room");
+  }
+
 }

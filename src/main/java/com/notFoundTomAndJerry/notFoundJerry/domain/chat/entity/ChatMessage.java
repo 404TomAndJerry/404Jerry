@@ -1,6 +1,7 @@
 package com.notFoundTomAndJerry.notFoundJerry.domain.chat.entity;
 
 
+import com.fasterxml.jackson.annotation.JsonFormat;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.EntityListeners;
@@ -15,16 +16,24 @@ import jakarta.persistence.ManyToOne;
 import jakarta.persistence.Table;
 import java.time.LocalDateTime;
 import lombok.AccessLevel;
+import lombok.AllArgsConstructor;
+import lombok.Builder;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
+import org.hibernate.annotations.OnDelete;
+import org.hibernate.annotations.OnDeleteAction;
 import org.springframework.data.annotation.CreatedDate;
 import org.springframework.data.jpa.domain.support.AuditingEntityListener;
 
 @Entity
 @Getter
+@Builder
+@AllArgsConstructor
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
 @Table(name = "chat_messages", indexes = {
-    @Index(name = "idx_chat_message_created_at", columnList = "chat_room_id,createAt")})
+    // 복합 인덱스로 성능 극대화
+    @Index(name = "idx_chatroom_created_at", columnList = "chat_room_id, created_at")
+})
 @EntityListeners(AuditingEntityListener.class)
 public class ChatMessage {
 
@@ -35,6 +44,7 @@ public class ChatMessage {
   // 어느 채팅 룸(룸id)에 연결되었는지
   @ManyToOne(fetch = FetchType.LAZY)
   @JoinColumn(name = "chat_room_id", nullable = false)
+  @OnDelete(action = OnDeleteAction.CASCADE)
   private ChatRoom chatRoom;
 
   // 어떤 유저(유저id)가 작성했는지, 유저 id만 받아오기
@@ -47,7 +57,7 @@ public class ChatMessage {
   private String message;
 
   @CreatedDate
-  @Column(updatable = false)
+  @Column(name = "created_at", updatable = false)
   private LocalDateTime createdAt;
 
 }

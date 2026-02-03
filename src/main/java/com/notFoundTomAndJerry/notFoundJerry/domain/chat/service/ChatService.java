@@ -7,8 +7,7 @@ import com.notFoundTomAndJerry.notFoundJerry.domain.chat.repository.ChatMessageR
 import com.notFoundTomAndJerry.notFoundJerry.domain.chat.repository.ChatMessageRepository;
 import com.notFoundTomAndJerry.notFoundJerry.domain.chat.repository.ChatRoomRepository;
 import com.notFoundTomAndJerry.notFoundJerry.global.exception.BusinessException;
-import com.notFoundTomAndJerry.notFoundJerry.global.exception.CommonErrorCode;
-import jakarta.persistence.EntityNotFoundException;
+import com.notFoundTomAndJerry.notFoundJerry.global.exception.domain.ChatErrorCode;
 import java.util.Collections;
 import java.util.List;
 import java.util.stream.Collectors;
@@ -32,8 +31,8 @@ public class ChatService {
   public void sendMessage(Long roomId, Long senderId, String content) {
     // 1. 방 존재 여부 먼저 확인 (방이 없으면 명확한 Custom Exception 발생)
     ChatRoom room = chatRoomRepository.findById(roomId)
-        .orElseThrow(() -> new BusinessException(CommonErrorCode.CHAT_ROOM_NOT_FOUND_ID,
-            String.format(CommonErrorCode.CHAT_ROOM_NOT_FOUND_ID.getMessage(), roomId)));
+        .orElseThrow(() -> new BusinessException(ChatErrorCode.CHAT_ROOM_NOT_FOUND_ID,
+            String.format(ChatErrorCode.CHAT_ROOM_NOT_FOUND_ID.getMessage(), roomId)));
     // RDB 저장 (영구 보관용 - 엔티티 생성 및 저장)
     ChatRoom chatRoom = chatRoomRepository.getReferenceById(roomId);
     ChatMessage chatMessage = ChatMessage.builder()
@@ -86,7 +85,7 @@ public class ChatService {
   // 삭제
   public void deleteChatRoom(Long roomId) {
     ChatRoom room = chatRoomRepository.findById(roomId)
-        .orElseThrow(() -> new BusinessException(CommonErrorCode.CHAT_ROOM_NOT_FOUND));
+        .orElseThrow(() -> new BusinessException(ChatErrorCode.CHAT_ROOM_NOT_FOUND));
     // DB 삭제: Cascade 설정 덕분에 ChatMessage들도 같이 삭제됨
     chatRoomRepository.deleteById(roomId);
     // Redis 캐시 삭제: 이거 안 하면 찌꺼기 남음

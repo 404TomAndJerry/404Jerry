@@ -17,7 +17,6 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
   public static final String AUTHORIZATION_HEADER = "Authorization";
   public static final String BEARER_PREFIX = "Bearer ";
 
-  // 아까 만드신 클래스 이름이 JwtProvider였으므로 이걸 주입받아야 합니다.
   private final JwtProvider jwtProvider;
 
   @Override

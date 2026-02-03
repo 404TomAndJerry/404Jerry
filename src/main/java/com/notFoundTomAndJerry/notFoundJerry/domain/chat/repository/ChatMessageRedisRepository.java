@@ -5,10 +5,10 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.notFoundTomAndJerry.notFoundJerry.domain.chat.dto.ChatMessageDto;
 import com.notFoundTomAndJerry.notFoundJerry.global.exception.BusinessException;
 import com.notFoundTomAndJerry.notFoundJerry.global.exception.CommonErrorCode;
+import com.notFoundTomAndJerry.notFoundJerry.global.exception.domain.ChatErrorCode;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.TimeUnit;
-import java.util.stream.Collectors;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.redis.core.RedisTemplate;
@@ -44,7 +44,7 @@ public class ChatMessageRedisRepository {
       // 1. 로그는 상세하게 남겨서 서버 콘솔에서 확인
       log.error("Redis JSON 변환 실패: {}", e.getMessage());
       // 2. 공통 예외 객체를 던져서 GlobalExceptionHandler가 처리하게 함
-      throw new BusinessException(CommonErrorCode.REDIS_PROCESSING_ERROR, "메시지 직렬화 중 오류 발생");
+      throw new BusinessException(ChatErrorCode.REDIS_PROCESSING_ERROR, "메시지 직렬화 중 오류 발생");
     } catch (Exception e){
       // Redis 연결 오류 등 기타 예외 처리
       log.error("Redis 저장 중 알 수 없는 오류: {}", e.getMessage());
@@ -70,7 +70,7 @@ public class ChatMessageRedisRepository {
         dtoList.add(dto);
       } catch (JsonProcessingException e) {
         log.error("Redis 메시지 파싱 실패: {}", e.getMessage());
-        throw new BusinessException(CommonErrorCode.REDIS_PROCESSING_ERROR, "데이터 복구 중 오류 발생");
+        throw new BusinessException(ChatErrorCode.REDIS_PROCESSING_ERROR, "데이터 복구 중 오류 발생");
       }
     }
     return dtoList;

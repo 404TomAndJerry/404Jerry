@@ -44,7 +44,7 @@ public class User {
   private String nickname;
 
   @Column(length = 10)
-  private String age;
+  private Integer age;
 
   @Enumerated(EnumType.STRING)
   @Column(nullable = false, length = 20)

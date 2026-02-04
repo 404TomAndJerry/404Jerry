@@ -7,8 +7,16 @@ import org.locationtech.jts.geom.Point;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
+import org.springframework.stereotype.Repository;
 
+@Repository
 public interface LocationRepository extends JpaRepository<Location, Long> {
+
+  // 주소가 비어있는 장소들만 찾아오는 메서드 추가
+  List<Location> findByAddressIsNull();
+
+  // 중복 확인을 위해 공원관리번호 조회 메서드 추가
+  Optional<Location> findByManageNo(String manageNo);
 
   // Room 생성 시 위치 존재 여부 및 유효성 검증
   boolean existsByIdAndIsValidTrue(Long id);

@@ -67,17 +67,17 @@ jwt:
       ddl-auto: validate
     properties:
       hibernate:
-        # MySQL 8.x 호환
+        # MySQL 9.x 호환
         dialect: org.hibernate.dialect.MySQLDialect
         format_sql: true
         show_sql: false
         use_sql_comments: true
         jdbc:
           time_zone: Asia/Seoul
-          batch_versioned_data: true
-          batch_size: 30
-        order_inserts: true
-        order_updates: true
+          # batch_versioned_data: true
+          # batch_size: 30
+        # order_inserts: true
+        # order_updates: true
     # OSIV 비활성화 (백엔드 API 추천)
     open-in-view: false
 
@@ -103,3 +103,14 @@ jwt:
       root: info
       # 운영 서버는 로그를 최소화하여 성능 유지
       org.hibernate.SQL: warn
+
+# kakao API key
+kakao:
+  api:
+    key: ${KAKAO_API_KEY}
+
+# 공공데이터
+public-data:
+  api:
+    url: ${PUBLIC_DATA_URL}
+    key: ${PUBLIC_DATA_KEY}

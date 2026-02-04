@@ -114,7 +114,7 @@ public class GameController {
     )
     public ResponseEntity<PlayerRoleResponse> getMyRole(
             @Parameter(description = "게임 ID") @PathVariable Long gameId,
-            @AuthenticationPrincipal Object principal
+            @AuthenticationPrincipal CustomPrincipal principal
     ) {
         Long userId = resolveUserId(principal);
         PlayerRoleResponse response = gamePlayerService.getPlayerRole(gameId, userId);
@@ -128,7 +128,7 @@ public class GameController {
     @Operation(summary = "MVP 투표", description = "게임 종료 후 MVP를 투표합니다. skip=true로 투표를 건너뛸 수 있습니다. JWT 인증 필요.")
     public ResponseEntity<MvpVoteResponse> voteMvp(
             @Parameter(description = "게임 ID") @PathVariable Long gameId,
-            @AuthenticationPrincipal Object principal,
+            @AuthenticationPrincipal CustomPrincipal principal,
             @Valid @RequestBody MvpVoteRequest request
     ) {
         Long userId = resolveUserId(principal);
@@ -141,7 +141,7 @@ public class GameController {
     @Operation(summary = "내 투표 여부 확인", description = "JWT 토큰의 사용자가 이미 투표했는지 확인합니다.")
     public ResponseEntity<Boolean> hasVoted(
             @Parameter(description = "게임 ID") @PathVariable Long gameId,
-            @AuthenticationPrincipal Object principal
+            @AuthenticationPrincipal CustomPrincipal principal
     ) {
         Long userId = resolveUserId(principal);
         boolean hasVoted = mvpVoteService.hasVoted(gameId, userId);
@@ -177,7 +177,7 @@ public class GameController {
     @Operation(summary = "탈주 처리", description = "게임 중 플레이어 탈주를 기록합니다. (본인만 가능) JWT 인증 필요.")
     public ResponseEntity<RunawayResponse> handleRunaway(
             @Parameter(description = "게임 ID") @PathVariable Long gameId,
-            @AuthenticationPrincipal Object principal
+            @AuthenticationPrincipal CustomPrincipal principal
     ) {
         Long userId = resolveUserId(principal);
         RunawayResponse response = runawayService.handleRunaway(gameId, userId);

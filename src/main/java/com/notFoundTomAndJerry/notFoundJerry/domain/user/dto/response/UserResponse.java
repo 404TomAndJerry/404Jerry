@@ -13,6 +13,7 @@ public class UserResponse {
   private Long id;
   private String email;
   private String nickname;
+  private String age;
   private UserStatus status;
   private ProviderType providerType;
 
@@ -21,6 +22,7 @@ public class UserResponse {
         .id(user.getId())
         .email(user.getEmail())
         .nickname(user.getNickname())
+        .age(user.getAge())
         .status(user.getStatus())
         .providerType(user.getProviderType())
         .build();

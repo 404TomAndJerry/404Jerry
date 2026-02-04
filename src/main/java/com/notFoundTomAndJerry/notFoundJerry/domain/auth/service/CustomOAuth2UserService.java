@@ -7,6 +7,7 @@ import com.notFoundTomAndJerry.notFoundJerry.domain.auth.entity.enums.OAuthProvi
 import com.notFoundTomAndJerry.notFoundJerry.domain.auth.entity.enums.ProviderType;
 import com.notFoundTomAndJerry.notFoundJerry.domain.auth.repository.OAuthAccountRepository;
 import com.notFoundTomAndJerry.notFoundJerry.domain.user.entity.User;
+import com.notFoundTomAndJerry.notFoundJerry.domain.user.entity.enums.UserStatus;
 import com.notFoundTomAndJerry.notFoundJerry.domain.user.repository.UserRepository;
 import com.notFoundTomAndJerry.notFoundJerry.global.security.CustomPrincipal;
 import java.time.LocalDateTime;
@@ -69,9 +70,9 @@ public class CustomOAuth2UserService extends DefaultOAuth2UserService {
           User newUser = User.builder()
               .email(userInfo.getEmail())
               .nickname(nickname)
+              .status(UserStatus.ACTIVE)
               .providerType(ProviderType.valueOf(userInfo.getProvider().toUpperCase()))
               .createdAt(LocalDateTime.now())
-              // User 엔티티 필드에 맞춰서 채워넣으세요
               .build();
           userRepository.save(newUser);
 

@@ -45,7 +45,7 @@ public class SecurityConfig {
             // 인증 없이 접근 가능한 경로
             .requestMatchers(
                 "/auth/**", // 소셜 관련 경로 허용
-                "/api/v1/auth/**", // 소셜 관련 경로 허용
+                "/api/auth/**", // 소셜 관련 경로 허용
                 "/login/**", // 소셜 관련 경로 허용
                 "/oauth2/**", // 소셜 관련 경로 허용
                 "/v3/api-docs/**", // 스웨거

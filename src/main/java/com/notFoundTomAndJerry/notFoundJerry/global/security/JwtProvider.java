@@ -1,6 +1,8 @@
 package com.notFoundTomAndJerry.notFoundJerry.global.security;
 
 import com.notFoundTomAndJerry.notFoundJerry.domain.auth.entity.enums.ProviderType;
+import com.notFoundTomAndJerry.notFoundJerry.domain.user.entity.User;
+import com.notFoundTomAndJerry.notFoundJerry.domain.user.entity.enums.UserStatus;
 import io.jsonwebtoken.Claims;
 import io.jsonwebtoken.ExpiredJwtException;
 import io.jsonwebtoken.Jwts;
@@ -12,6 +14,7 @@ import io.jsonwebtoken.security.Keys;
 import io.jsonwebtoken.security.SecurityException;
 import java.util.Collections;
 import java.util.Date;
+import java.util.HashMap;
 import java.util.List;
 import javax.crypto.SecretKey;
 import lombok.Getter;
@@ -69,16 +72,35 @@ public class JwtProvider {
         .compact();
   }
 
-  // 토큰에서 인증 정보(Authentication) 추출
+  // 토큰에서 CustomPrincipal 객체를 만들어서 넣음
   public Authentication getAuthentication(String token) {
     Claims claims = getACCClaims(token);
-    String userId = claims.getSubject();
 
-    // 권한은 ROLE_USER로 통일
+    // 1. 토큰에 담긴 정보 꺼내기
+    String userIdStr = claims.getSubject();
+    Long userId = Long.valueOf(userIdStr);
+    String email = claims.get("email", String.class);
+    String nickname = claims.get("nickname", String.class);
+    // enum 변환 (String -> Enum)
+    String providerStr = claims.get("provider", String.class);
+    ProviderType providerType = ProviderType.valueOf(providerStr);
+
+    // 2. 임시 User 객체 생성 (DB 조회를 줄이기 위해 토큰 정보로 만듦)
+    // 필요한 필드만 채웁니다. (비밀번호 등은 몰라도 됨)
+    User user = User.builder()
+        .id(userId)
+        .email(email)
+        .nickname(nickname)
+        .providerType(providerType)
+        .status(UserStatus.ACTIVE) // 토큰이 있다는 건 ACTIVE라는 뜻
+        .build();
+
+    // 3. CustomPrincipal 생성
+    CustomPrincipal principal = new CustomPrincipal(user, new HashMap<>());
+
+    // 4. Authentication 객체 반환 (이제 Principal은 String이 아니라 객체임!)
     List<SimpleGrantedAuthority> authorities = Collections.singletonList(new SimpleGrantedAuthority("ROLE_USER"));
-
-    // Principal에 userId(PK)를 넣음
-    return new UsernamePasswordAuthenticationToken(userId, "", authorities);
+    return new UsernamePasswordAuthenticationToken(principal, "", authorities);
   }
 
   public boolean validateAccessToken(String token) {

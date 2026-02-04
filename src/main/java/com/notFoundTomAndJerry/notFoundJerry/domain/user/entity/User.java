@@ -57,4 +57,9 @@ public class User {
 
   @LastModifiedDate
   private LocalDateTime updatedAt;
+
+  // 닉네임 변경 편의 메서드
+  public void updateNickname(String newNickname) {
+    this.nickname = newNickname;
+  }
 }

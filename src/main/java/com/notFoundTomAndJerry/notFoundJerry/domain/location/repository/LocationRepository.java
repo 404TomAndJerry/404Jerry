@@ -65,4 +65,9 @@ public interface LocationRepository extends JpaRepository<Location, Long> {
       nativeQuery = true)
   Double getDistanceBetween(@Param("userPoint") Object userPoint,
       @Param("locationId") Long locationId);
+
+  /**
+   * 유효성이 검증된 모든 장소 목록 조회 프론트엔드 초기 지도 렌더링 시 전체 마커를 표시하기 위해 사용
+   */
+  List<Location> findAllByIsValidTrue();
 }

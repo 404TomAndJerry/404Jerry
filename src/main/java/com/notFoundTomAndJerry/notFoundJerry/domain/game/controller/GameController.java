@@ -39,9 +39,14 @@ public class GameController {
 
     // ========== 게임 생명주기 관리 ==========
 
-    // 게임 시작, request 게임 시작 요청 (방 ID, 역할 배치 방식)
+    // 게임 시작: RANDOM=Room 참가자 랜덤 배치, MANUAL=Room에 배치된 참가자·역할을 그대로 가져와 배치
     @PostMapping("/start")
-    @Operation(summary = "게임 시작", description = "방 ID와 역할 배치 방식을 받아 게임을 시작합니다.")
+    @Operation(
+        summary = "게임 시작",
+        description = "방 ID와 역할 배치 방식을 받아 게임을 시작합니다. "
+            + "RANDOM: Room 참가자 목록을 랜덤 배치. "
+            + "MANUAL: Room 도메인에 배치된 참가자·역할을 조회해 그대로 Game에 반영합니다."
+    )
     public ResponseEntity<GameStartResponse> startGame(
             @Valid @RequestBody GameStartRequest request
     ) {
@@ -82,9 +87,14 @@ public class GameController {
 
     // ========== 역할 관리 ==========
 
-    // 역할 배치 (MANUAL), gameId 게임 ID, request 역할 배치 요청
+    // 역할 맵 직접 전송 (예외용). 수동 배치의 일반 흐름은 게임 시작 시 roleAssignment: MANUAL (Room 참가자 역할 자동 반영)
     @PostMapping("/{gameId}/roles")
-    @Operation(summary = "역할 배치 (MANUAL)", description = "플레이어별 역할을 수동으로 배치합니다.")
+    @Operation(
+        summary = "역할 맵 직접 배치",
+        description = "Request Body로 userId→역할 맵을 보내 역할을 배치합니다. "
+            + "수동 배치는 보통 게임 시작 시 roleAssignment: MANUAL로 Room 참가자 역할을 자동 반영하므로, "
+            + "이 API는 역할 맵을 직접 보낼 때만 사용합니다. 이미 역할이 배치된 게임이면 400."
+    )
     public ResponseEntity<Void> assignRoles(
             @Parameter(description = "게임 ID") @PathVariable Long gameId,
             @Valid @RequestBody RoleAssignRequest request

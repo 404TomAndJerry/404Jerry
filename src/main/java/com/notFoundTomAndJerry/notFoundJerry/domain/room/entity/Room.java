@@ -3,6 +3,8 @@ package com.notFoundTomAndJerry.notFoundJerry.domain.room.entity;
 import com.notFoundTomAndJerry.notFoundJerry.domain.room.entity.enums.ParticipantRole;
 import com.notFoundTomAndJerry.notFoundJerry.domain.room.entity.enums.RoleAssignMode;
 import com.notFoundTomAndJerry.notFoundJerry.domain.room.entity.enums.RoomStatus;
+import com.notFoundTomAndJerry.notFoundJerry.global.exception.BusinessException;
+import com.notFoundTomAndJerry.notFoundJerry.global.exception.domain.RoomErrorCode;
 import jakarta.persistence.*;
 import lombok.*;
 import org.springframework.data.annotation.CreatedDate;
@@ -113,25 +115,25 @@ public class Room {
     private static void validateCreateParams(LocalDateTime startTime, Integer maxPlayers,
                                              Integer policeCount, Integer thiefCount) {
         if (startTime != null && startTime.isBefore(LocalDateTime.now())) {
-            throw new IllegalArgumentException("시작 시간은 현재 이후여야 합니다.");
+            throw new BusinessException(RoomErrorCode.INVALID_START_TIME);
         }
         if (maxPlayers < 6) {
-            throw new IllegalArgumentException("최소 인원은 6명 이상이어야 합니다.");
+            throw new BusinessException(RoomErrorCode.INVALID_MIN_PLAYERS);
         }
         if (policeCount + thiefCount != maxPlayers) {
-            throw new IllegalArgumentException("경찰 + 도둑 수는 정원과 일치해야 합니다.");
+            throw new BusinessException(RoomErrorCode.INVALID_ROLE_COUNT);
         }
     }
 
     private void validateCanJoin(Long userId) {
         if (this.status != RoomStatus.WAITING) {
-            throw new IllegalStateException("WAITING 상태에서만 참가 가능합니다.");
+            throw new BusinessException(RoomErrorCode.INVALID_ROOM_STATUS); // 상태 관련 에러
         }
         if (participants.size() >= maxPlayers) {
-            throw new IllegalStateException("정원이 가득 찼습니다.");
+            throw new BusinessException(RoomErrorCode.ROOM_FULL);
         }
         if (participants.stream().anyMatch(p -> p.getUserId().equals(userId))) {
-            throw new IllegalStateException("이미 참가 중입니다.");
+            throw new BusinessException(RoomErrorCode.ALREADY_JOINED);
         }
     }
 
@@ -154,10 +156,10 @@ public class Room {
      */
     public void changeParticipantRole(Long userId, ParticipantRole newRole) {
         if (this.status != RoomStatus.WAITING) {
-            throw new IllegalStateException("WAITING 상태에서만 역할을 변경할 수 있습니다.");
+            throw new BusinessException(RoomErrorCode.INVALID_ROOM_STATUS);
         }
         if (this.roleAssignMode != RoleAssignMode.MANUAL) {
-            throw new IllegalStateException("MANUAL 모드에서만 역할을 선택할 수 있습니다.");
+            throw new BusinessException(RoomErrorCode.ROLE_ASSIGN_NOT_ALLOWED);
         }
 
         RoomParticipant participant = findParticipantByUserId(userId);
@@ -171,10 +173,10 @@ public class Room {
         if (oldRole == ParticipantRole.THIEF) thief--;
 
         if (newRole == ParticipantRole.POLICE && police + 1 > policeCount) {
-            throw new IllegalStateException("경찰 정원이 가득 찼습니다.");
+            throw new BusinessException(RoomErrorCode.ROLE_COUNT_EXCEEDED);
         }
         if (newRole == ParticipantRole.THIEF && thief + 1 > thiefCount) {
-            throw new IllegalStateException("도둑 정원이 가득 찼습니다.");
+            throw new BusinessException(RoomErrorCode.ROLE_COUNT_EXCEEDED);
         }
 
         participant.assignRole(newRole);
@@ -182,10 +184,10 @@ public class Room {
 
     public void delete(Long requesterId) {
         if (!isHost(requesterId)) {
-            throw new IllegalStateException("방장만 삭제할 수 있습니다.");
+            throw new BusinessException(RoomErrorCode.ONLY_HOST_ALLOWED);
         }
         if (this.status != RoomStatus.WAITING) {
-            throw new IllegalStateException("WAITING 상태에서만 삭제 가능합니다.");
+            throw new BusinessException(RoomErrorCode.INVALID_ROOM_STATUS);
         }
         this.status = RoomStatus.DELETED;
         this.deletedAt = LocalDateTime.now();
@@ -193,9 +195,16 @@ public class Room {
 
     public void transitionToRunning() {
         if (this.status != RoomStatus.WAITING) {
-            throw new IllegalStateException("WAITING 상태에서만 게임을 시작할 수 있습니다.");
+            throw new BusinessException(RoomErrorCode.INVALID_ROOM_STATUS);
         }
         this.status = RoomStatus.RUNNING;
+    }
+
+    public void transitionToFinished() {
+        if (this.status != RoomStatus.RUNNING) {
+            throw new BusinessException(RoomErrorCode.INVALID_ROOM_STATUS);
+        }
+        this.status = RoomStatus.FINISHED;
     }
 
 
@@ -203,7 +212,7 @@ public class Room {
         return participants.stream()
                 .filter(p -> p.getUserId().equals(userId))
                 .findFirst()
-                .orElseThrow(() -> new IllegalStateException("참가 정보를 찾을 수 없습니다."));
+                .orElseThrow(() -> new BusinessException(RoomErrorCode.PARTICIPANT_NOT_FOUND));
     }
 
     private int countRole(ParticipantRole role) {

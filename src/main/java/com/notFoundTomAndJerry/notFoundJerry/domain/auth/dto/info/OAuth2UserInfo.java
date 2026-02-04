@@ -7,5 +7,5 @@ public interface OAuth2UserInfo {
   String getProvider();   // google, kakao, naver
   String getEmail();
   String getName();
-  Map<String, Object> attributes();
+  Map<String, Object> getAttributes();
 }

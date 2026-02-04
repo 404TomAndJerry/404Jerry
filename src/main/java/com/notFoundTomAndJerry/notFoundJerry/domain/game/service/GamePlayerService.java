@@ -7,8 +7,7 @@ import com.notFoundTomAndJerry.notFoundJerry.domain.game.entity.GamePlayer;
 import com.notFoundTomAndJerry.notFoundJerry.domain.game.entity.enums.PlayerRole;
 import com.notFoundTomAndJerry.notFoundJerry.domain.game.repository.GamePlayerRepository;
 import com.notFoundTomAndJerry.notFoundJerry.domain.room.entity.RoomParticipant;
-// TODO: User 도메인 연동 후 주석 해제
-// import com.notFoundTomAndJerry.notFoundJerry.domain.user.repository.UserRepository;
+import com.notFoundTomAndJerry.notFoundJerry.domain.user.repository.UserRepository;
 import com.notFoundTomAndJerry.notFoundJerry.global.exception.BusinessException;
 import com.notFoundTomAndJerry.notFoundJerry.global.exception.domain.GameErrorCode;
 import lombok.RequiredArgsConstructor;
@@ -17,12 +16,9 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.util.ArrayList;
 import java.util.Collections;
-// TODO: User 도메인 연동 후 주석 해제
-// import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-// TODO: User 도메인 연동 후 주석 해제
-// import java.util.stream.Collectors;
+import java.util.stream.Collectors;
 
 /**
  * 게임 플레이어 관리 서비스
@@ -36,8 +32,7 @@ public class GamePlayerService {
 
     private final GamePlayerRepository gamePlayerRepository;
     private final GameConverter gameConverter;
-    // TODO: User 도메인 연동 후 주석 해제
-    // private final UserRepository userRepository;
+    private final UserRepository userRepository;
 
     // ========== 역할 배치 ==========
 
@@ -72,65 +67,24 @@ public class GamePlayerService {
     public PlayerRoleResponse getPlayerRole(Long gameId, Long userId) {
         GamePlayer player = gamePlayerRepository.findByGameIdAndUserId(gameId, userId)
                 .orElseThrow(() -> new BusinessException(GameErrorCode.PLAYER_NOT_FOUND, "게임 " + gameId + "에서 플레이어 " + userId + "를 찾을 수 없습니다."));
-        return gameConverter.toRoleResponse(player);
-    }
 
-    /* TODO: User 도메인 연동 후 아래 코드로 교체
-    public PlayerRoleResponse getPlayerRole(Long gameId, Long userId) {
-        GamePlayer player = gamePlayerRepository.findByGameIdAndUserId(gameId, userId)
-                .orElseThrow(() -> new BusinessException(GameErrorCode.PLAYER_NOT_FOUND, "게임 " + gameId + "에서 플레이어 " + userId + "를 찾을 수 없습니다."));
-        
-        // User 닉네임 조회
-        String nickname = "Unknown";
-        List<Map<String, Object>> userInfos = userRepository.findNicknamesByUserIds(List.of(userId));
-        if (!userInfos.isEmpty()) {
-            nickname = (String) userInfos.get(0).get("nickname");
-        }
-        
-        return PlayerRoleResponse.builder()
-                .userId(player.getUserId())
-                .nickname(nickname)
-                .role(player.getRole())
-                .build();
+        Map<Long, String> nicknameMap = userRepository.findNicknameMap(List.of(userId));
+        String nickname = nicknameMap.getOrDefault(userId, "Unknown");
+
+        return gameConverter.toRoleResponse(player, nickname);
     }
-    */
 
     // 전체 플레이어 역할 조회, gameId 게임 ID
     public List<PlayerRoleResponse> getAllPlayers(Long gameId) {
         List<GamePlayer> players = gamePlayerRepository.findByGameId(gameId);
-        return gameConverter.toRoleResponseList(players);
-    }
 
-    /* TODO: User 도메인 연동 후 아래 코드로 교체
-    public List<PlayerRoleResponse> getAllPlayers(Long gameId) {
-        List<GamePlayer> players = gamePlayerRepository.findByGameId(gameId);
-        
-        // User ID 목록 추출
         List<Long> userIds = players.stream()
                 .map(GamePlayer::getUserId)
                 .collect(Collectors.toList());
-        
-        // User 닉네임 조회 (userId -> nickname 매핑)
-        Map<Long, String> nicknameMap = new HashMap<>();
-        if (!userIds.isEmpty()) {
-            List<Map<String, Object>> userInfos = userRepository.findNicknamesByUserIds(userIds);
-            for (Map<String, Object> info : userInfos) {
-                Long userId = ((Number) info.get("userId")).longValue();
-                String nickname = (String) info.get("nickname");
-                nicknameMap.put(userId, nickname);
-            }
-        }
-        
-        // PlayerRoleResponse 생성 (닉네임 포함)
-        return players.stream()
-                .map(player -> PlayerRoleResponse.builder()
-                        .userId(player.getUserId())
-                        .nickname(nicknameMap.getOrDefault(player.getUserId(), "Unknown"))
-                        .role(player.getRole())
-                        .build())
-                .collect(Collectors.toList());
+        Map<Long, String> nicknameMap = userRepository.findNicknameMap(userIds);
+
+        return gameConverter.toRoleResponseList(players, nicknameMap);
     }
-    */
 
     // ========== MVP 관리 ==========
 

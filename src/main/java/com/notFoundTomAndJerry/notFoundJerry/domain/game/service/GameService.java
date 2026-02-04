@@ -103,33 +103,33 @@ public class GameService {
     // 게임 종료, gameId 게임 ID, request 게임 종료 정보 (종료 사유)
     @Transactional
     public GameEndResponse finishGame(Long gameId, GameEndRequest request) {
-        // 1. 게임 정보 조회
+        // 게임 정보 조회
         Game game = gameRepository.findById(gameId)
                 .orElseThrow(() -> new BusinessException(GameErrorCode.GAME_NOT_FOUND, "게임을 찾을 수 없습니다: " + gameId));
         
-        // 2. Room 정보 조회
+        // Room 정보 조회
         Room room = roomRepository.findByIdWithParticipants(game.getRoomId())
                 .orElseThrow(() -> new BusinessException(GameErrorCode.GAME_NOT_FOUND, "게임을 찾을 수 없습니다: " + game.getRoomId()));
 
-        // 3. 종료 사유에 따라 승리 팀 자동 결정
+        // 종료 사유에 따라 승리 팀 자동 결정
         EndReason endReason = request.getEndReason();
         PlayerRole winnerTeam = endReason.getWinner();
 
-        // 4. 게임 상태를 FINISHED로 변경 및 종료 사유 저장
+        // 게임 상태를 FINISHED로 변경 및 종료 사유 저장
         game.finish(endReason.getDescription());
 
-        // 5. Room 상태를 FINISHED로 변경
+        // Room 상태를 FINISHED로 변경
         room.transitionToFinished();
         roomRepository.save(room);
 
-        // 6. 게임 결과를 DB에 저장
+        // 게임 결과를 DB에 저장
         gameResultService.saveGameResults(
             gameId, 
             winnerTeam, 
             endReason.getDescription()
         );
 
-        // 7. Response 생성 (Converter 사용)
+        // Response 생성 (Converter 사용)
         return gameConverter.toEndResponse(game);
     }
 

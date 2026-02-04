@@ -3,14 +3,17 @@ package com.notFoundTomAndJerry.notFoundJerry.domain.game.controller;
 import com.notFoundTomAndJerry.notFoundJerry.domain.game.dto.request.*;
 import com.notFoundTomAndJerry.notFoundJerry.domain.game.dto.response.*;
 import com.notFoundTomAndJerry.notFoundJerry.domain.game.service.*;
+import com.notFoundTomAndJerry.notFoundJerry.global.security.CustomPrincipal;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.web.server.ResponseStatusException;
 
 import java.util.List;
 
@@ -94,7 +97,7 @@ public class GameController {
     @GetMapping("/{gameId}/roles")
     @Operation(
         summary = "전체 플레이어 역할 조회", 
-        description = "게임에 참여한 모든 플레이어의 닉네임과 역할을 조회합니다. (현재: 더미 데이터 / TODO: User 테이블 연동)"
+        description = "게임에 참여한 모든 플레이어의 닉네임과 역할을 조회합니다. (User 도메인 연동)"
     )
     public ResponseEntity<List<PlayerRoleResponse>> getAllPlayerRoles(
             @Parameter(description = "게임 ID") @PathVariable Long gameId
@@ -106,13 +109,14 @@ public class GameController {
     // 개별 플레이어 역할 조회, gameId 게임 ID, userId JWT에서 자동 추출
     @GetMapping("/{gameId}/roles/me")
     @Operation(
-        summary = "내 역할 조회", 
-        description = "JWT 토큰의 사용자 ID로 자신의 닉네임과 역할을 조회합니다. (현재: 더미 데이터 / TODO: User 테이블 연동)"
+        summary = "내 역할 조회",
+        description = "JWT 토큰의 사용자 ID로 자신의 닉네임과 역할을 조회합니다. (User 도메인 연동)"
     )
     public ResponseEntity<PlayerRoleResponse> getMyRole(
             @Parameter(description = "게임 ID") @PathVariable Long gameId,
-            @AuthenticationPrincipal(expression = "id") Long userId
+            @AuthenticationPrincipal CustomPrincipal principal
     ) {
+        Long userId = resolveUserId(principal);
         PlayerRoleResponse response = gamePlayerService.getPlayerRole(gameId, userId);
         return ResponseEntity.ok(response);
     }
@@ -121,12 +125,13 @@ public class GameController {
 
     // MVP 투표, gameId 게임 ID, request 투표 요청, userId JWT에서 자동 추출
     @PostMapping("/{gameId}/mvp/vote")
-    @Operation(summary = "MVP 투표", description = "게임 종료 후 MVP를 투표합니다. skip=true로 투표를 건너뛸 수 있습니다.")
+    @Operation(summary = "MVP 투표", description = "게임 종료 후 MVP를 투표합니다. skip=true로 투표를 건너뛸 수 있습니다. JWT 인증 필요.")
     public ResponseEntity<MvpVoteResponse> voteMvp(
             @Parameter(description = "게임 ID") @PathVariable Long gameId,
-            @AuthenticationPrincipal(expression = "id") Long userId,
+            @AuthenticationPrincipal CustomPrincipal principal,
             @Valid @RequestBody MvpVoteRequest request
     ) {
+        Long userId = resolveUserId(principal);
         MvpVoteResponse response = mvpVoteService.voteMvp(gameId, userId, request);
         return ResponseEntity.ok(response);
     }
@@ -136,8 +141,9 @@ public class GameController {
     @Operation(summary = "내 투표 여부 확인", description = "JWT 토큰의 사용자가 이미 투표했는지 확인합니다.")
     public ResponseEntity<Boolean> hasVoted(
             @Parameter(description = "게임 ID") @PathVariable Long gameId,
-            @AuthenticationPrincipal(expression = "id") Long userId
+            @AuthenticationPrincipal CustomPrincipal principal
     ) {
+        Long userId = resolveUserId(principal);
         boolean hasVoted = mvpVoteService.hasVoted(gameId, userId);
         return ResponseEntity.ok(hasVoted);
     }
@@ -168,12 +174,27 @@ public class GameController {
 
     // 탈주 처리, gameId 게임 ID, userId JWT에서 자동 추출
     @PostMapping("/{gameId}/runaway")
-    @Operation(summary = "탈주 처리", description = "게임 중 플레이어 탈주를 기록합니다. (본인만 가능)")
+    @Operation(summary = "탈주 처리", description = "게임 중 플레이어 탈주를 기록합니다. (본인만 가능) JWT 인증 필요.")
     public ResponseEntity<RunawayResponse> handleRunaway(
             @Parameter(description = "게임 ID") @PathVariable Long gameId,
-            @AuthenticationPrincipal(expression = "id") Long userId
+            @AuthenticationPrincipal CustomPrincipal principal
     ) {
+        Long userId = resolveUserId(principal);
         RunawayResponse response = runawayService.handleRunaway(gameId, userId);
         return ResponseEntity.ok(response);
+    }
+
+    //JWT/OAuth2 Principal에서 userId(Long) 추출, CustomPrincipal: OAuth2 로그인, String: JWT 토큰 (userId가 Subject로 저장됨)
+    private Long resolveUserId(Object principal) {
+        if (principal == null) {
+            throw new ResponseStatusException(HttpStatus.UNAUTHORIZED, "인증이 필요합니다.");
+        }
+        if (principal instanceof CustomPrincipal) {
+            return ((CustomPrincipal) principal).getUserId();
+        }
+        if (principal instanceof String) {
+            return Long.parseLong((String) principal);
+        }
+        throw new ResponseStatusException(HttpStatus.UNAUTHORIZED, "유효하지 않은 인증 정보입니다.");
     }
 }

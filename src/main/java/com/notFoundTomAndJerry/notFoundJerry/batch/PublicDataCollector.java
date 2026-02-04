@@ -4,6 +4,8 @@ import com.notFoundTomAndJerry.notFoundJerry.domain.location.dto.external.Public
 import com.notFoundTomAndJerry.notFoundJerry.domain.location.dto.external.PublicParkResponse.ParkItem;
 import com.notFoundTomAndJerry.notFoundJerry.domain.location.entity.Location;
 import com.notFoundTomAndJerry.notFoundJerry.domain.location.repository.LocationRepository;
+import com.notFoundTomAndJerry.notFoundJerry.global.exception.BusinessException;
+import com.notFoundTomAndJerry.notFoundJerry.global.exception.domain.LocationErrorCode;
 import java.util.List;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -75,8 +77,9 @@ public class PublicDataCollector {
       }
     } catch (Exception e) {
       log.warn("면적 데이터 변환 실패: {} - {}", item.getParkNm(), item.getParkAr());
-      return false;
+      throw new BusinessException(LocationErrorCode.INVALID_LOCATION_DATA);
     }
+
     return true;
   }
 
@@ -91,6 +94,11 @@ public class PublicDataCollector {
           .orElseGet(() -> Location.builder()
               .manageNo(item.getManageNo())
               .build());
+
+      // 필수값 누락되었을 경우
+      if (item.getLatitude() == null || item.getLongitude() == null) {
+        throw new BusinessException(LocationErrorCode.INVALID_COORDINATES);
+      }
 
       // 공공데이터 정보 반영 (좌표 변환 등)
       location.updateFromPublicApi(

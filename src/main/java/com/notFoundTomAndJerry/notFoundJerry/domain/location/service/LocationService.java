@@ -8,6 +8,8 @@ import com.notFoundTomAndJerry.notFoundJerry.domain.location.dto.response.Locati
 import com.notFoundTomAndJerry.notFoundJerry.domain.location.dto.response.LocationRegionResponse;
 import com.notFoundTomAndJerry.notFoundJerry.domain.location.entity.Location;
 import com.notFoundTomAndJerry.notFoundJerry.domain.location.repository.LocationRepository;
+import com.notFoundTomAndJerry.notFoundJerry.global.exception.BusinessException;
+import com.notFoundTomAndJerry.notFoundJerry.global.exception.domain.LocationErrorCode;
 import java.util.List;
 import lombok.RequiredArgsConstructor;
 import org.locationtech.jts.geom.Point;
@@ -23,13 +25,17 @@ public class LocationService {
   // Room 생성 시 위치 유효성 검증
   public void validateLocation(Long locationId) {
     if (!locationRepository.existsByIdAndIsValidTrue(locationId)) {
-      throw new IllegalArgumentException("존재하지 않는 지역입니다. id=" + locationId);
-      // 또는 커스텀 예외: throw new LocationNotFoundException(locationId);
+      throw new BusinessException(LocationErrorCode.LOCATION_NOT_FOUND);
     }
   }
 
   // 지도 영역(MBR) 내의 방 ID 목록 조회
   public LocationFilterResponse filterLocationIdsByBounds(LocationBoundsRequest request) {
+    // 좌표 값이 유효하지 않을 경우를 대비한 방어 로직
+    if (request.getMinLat() == null || request.getMinLng() == null) {
+      throw new BusinessException(LocationErrorCode.INVALID_COORDINATES);
+    }
+
     // Polygon(사각형 영역)을 만들어 Repository에 전달
     String envelope = String.format("POLYGON((%f %f, %f %f, %f %f, %f %f, %f %f))",
         request.getMinLng(), request.getMinLat(),
@@ -47,17 +53,21 @@ public class LocationService {
     Point point = locationConverter.toPoint(latitude, longitude);
 
     Location nearestLocation = locationRepository.findNearestLocation(point)
-        .orElseThrow(() -> new IllegalArgumentException("해당 좌표 근처에 등록된 지역 정보가 없습니다."));
+        .orElseThrow(() -> new BusinessException(LocationErrorCode.REGION_NOT_FOUND));
     return locationConverter.toRegionResponse(nearestLocation);
   }
 
   // 사용자 위치와 특정 장소 간의 거리 계산
   public LocationDistanceResponse calculateDistance(UserLocationRequest userLoc, Long locationId) {
     Location target = locationRepository.findById(locationId)
-        .orElseThrow(() -> new IllegalArgumentException("위치 정보를 찾을 수 없습니다."));
+        .orElseThrow(() -> new BusinessException(LocationErrorCode.LOCATION_NOT_FOUND));
     Point userPoint = locationConverter.toPoint(userLoc.getLatitude(), userLoc.getLongitude());
 
     Double distanceInMeters = locationRepository.getDistanceBetween(userPoint, target.getId());
+
+    if (distanceInMeters == null) {
+      throw new BusinessException(LocationErrorCode.DATA_MAPPING_ERROR); // 계산 실패 시
+    }
 
     return locationConverter.toDistanceResponse(distanceInMeters);
   }

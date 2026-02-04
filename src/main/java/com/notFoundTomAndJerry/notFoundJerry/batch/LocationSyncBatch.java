@@ -3,6 +3,8 @@ package com.notFoundTomAndJerry.notFoundJerry.batch;
 import com.notFoundTomAndJerry.notFoundJerry.domain.location.dto.external.KakaoAddressResponse;
 import com.notFoundTomAndJerry.notFoundJerry.domain.location.entity.Location;
 import com.notFoundTomAndJerry.notFoundJerry.domain.location.repository.LocationRepository;
+import com.notFoundTomAndJerry.notFoundJerry.global.exception.BusinessException;
+import com.notFoundTomAndJerry.notFoundJerry.global.exception.domain.LocationErrorCode;
 import java.util.List;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -88,6 +90,7 @@ public class LocationSyncBatch {
         log.info("업데이트 성공: {} -> {}", location.getParkNm(), addressName);
       } else {
         log.warn("주소 정보 없음: {}", location.getParkNm());
+        throw new BusinessException(LocationErrorCode.REGION_NOT_FOUND);
       }
     } catch (Exception e) {
       log.error("카카오 API 호출 실패 (ID: {}): {}", location.getId(), e.getMessage());

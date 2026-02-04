@@ -6,11 +6,13 @@ import com.notFoundTomAndJerry.notFoundJerry.domain.location.dto.request.UserLoc
 import com.notFoundTomAndJerry.notFoundJerry.domain.location.dto.response.LocationDistanceResponse;
 import com.notFoundTomAndJerry.notFoundJerry.domain.location.dto.response.LocationFilterResponse;
 import com.notFoundTomAndJerry.notFoundJerry.domain.location.dto.response.LocationRegionResponse;
+import com.notFoundTomAndJerry.notFoundJerry.domain.location.dto.response.LocationResponse;
 import com.notFoundTomAndJerry.notFoundJerry.domain.location.entity.Location;
 import com.notFoundTomAndJerry.notFoundJerry.domain.location.repository.LocationRepository;
 import com.notFoundTomAndJerry.notFoundJerry.global.exception.BusinessException;
 import com.notFoundTomAndJerry.notFoundJerry.global.exception.domain.LocationErrorCode;
 import java.util.List;
+import java.util.stream.Collectors;
 import lombok.RequiredArgsConstructor;
 import org.locationtech.jts.geom.Point;
 import org.springframework.stereotype.Service;
@@ -19,8 +21,38 @@ import org.springframework.stereotype.Service;
 @RequiredArgsConstructor
 public class LocationService {
 
-  private LocationRepository locationRepository;
-  private LocationConverter locationConverter;
+  private final LocationRepository locationRepository;
+  private final LocationConverter locationConverter;
+
+  // 전체 조회 (프론트엔드 마커용)
+  public List<LocationResponse> getAllAvailableLocations() {
+    // 배치가 검증 완료(isValid=true)하고 주소까지 채워진 데이터만 조회
+    return locationRepository.findAllByIsValidTrue().stream()
+        .map(LocationResponse::from)
+        .collect(Collectors.toList());
+  }
+
+  /**
+   * 반경 기반 조회 (주변 구 포함)
+   *
+   * @param latitude       중심 위도
+   * @param longitude      중심 경도
+   * @param radiusInMeters 반경(미터 단위, 예: 3000 = 3km)
+   */
+  public List<LocationResponse> getLocationsByRadius(Double latitude, Double longitude,
+      Double radiusInMeters) {
+    // 위경도를 공간 객체(Point)로 변환
+    Point centerPoint = locationConverter.toPoint(latitude, longitude);
+
+    // Repository의 공간 쿼리 호출
+    List<Location> locations = locationRepository.findLocationsWithinRadius(centerPoint,
+        radiusInMeters);
+
+    // DTO 변환 후 반환
+    return locations.stream()
+        .map(LocationResponse::from)
+        .toList();
+  }
 
   // Room 생성 시 위치 유효성 검증
   public void validateLocation(Long locationId) {

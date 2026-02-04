@@ -7,6 +7,7 @@ import com.notFoundTomAndJerry.notFoundJerry.domain.game.dto.response.MvpVoteRes
 import com.notFoundTomAndJerry.notFoundJerry.domain.game.entity.GamePlayer;
 import com.notFoundTomAndJerry.notFoundJerry.domain.game.entity.MvpVote;
 import com.notFoundTomAndJerry.notFoundJerry.domain.game.repository.MvpVoteRepository;
+import com.notFoundTomAndJerry.notFoundJerry.domain.user.repository.UserRepository;
 import com.notFoundTomAndJerry.notFoundJerry.global.exception.BusinessException;
 import com.notFoundTomAndJerry.notFoundJerry.global.exception.domain.GameErrorCode;
 import lombok.RequiredArgsConstructor;
@@ -14,6 +15,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
+import java.util.Map;
 import java.util.stream.Collectors;
 
 /**
@@ -29,6 +31,7 @@ public class MvpVoteService {
     private final MvpVoteRepository mvpVoteRepository;
     private final GamePlayerService gamePlayerService;
     private final GameConverter gameConverter;
+    private final UserRepository userRepository;
 
     // MVP 투표, gameId 게임 ID, voterId 투표자 ID, request 투표 요청
     @Transactional
@@ -113,6 +116,12 @@ public class MvpVoteService {
     // MVP 결과 조회 (등록 발생 시 투표 MVP 여부, 투표가 없을 경우 MVP 없음), gameId 게임 ID
     public MvpResultResponse getMvpResult(Long gameId) {
         List<GamePlayer> mvpPlayers = gamePlayerService.getMvpPlayers(gameId);
-        return gameConverter.toMvpResultResponse(mvpPlayers);
+
+        List<Long> userIds = mvpPlayers.stream()
+                .map(GamePlayer::getUserId)
+                .collect(Collectors.toList());
+        Map<Long, String> nicknameMap = userRepository.findNicknameMap(userIds);
+
+        return gameConverter.toMvpResultResponse(mvpPlayers, nicknameMap);
     }
 }

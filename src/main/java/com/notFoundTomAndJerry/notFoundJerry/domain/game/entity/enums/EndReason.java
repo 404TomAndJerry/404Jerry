@@ -2,7 +2,7 @@ package com.notFoundTomAndJerry.notFoundJerry.domain.game.entity.enums;
 
 /**
  * 게임 종료 사유 (승리 팀 자동 결정)
- * 
+ *
  * 종료 사유에 따라 승리 팀이 자동으로 결정됨
  * - ALL_THIEVES_CAUGHT: 경찰 승리
  * - TIME_OVER: 도둑 승리
@@ -15,16 +15,16 @@ public enum EndReason {
 
     private final String description;
     private final PlayerRole winner;
-    
+
     EndReason(String description, PlayerRole winner) {
         this.description = description;
         this.winner = winner;
     }
-    
+
     public String getDescription() {
         return description;
     }
-    
+
     public PlayerRole getWinner() {
         return winner;
     }

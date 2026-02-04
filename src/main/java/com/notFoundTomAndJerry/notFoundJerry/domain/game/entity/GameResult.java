@@ -17,7 +17,7 @@ import java.time.LocalDateTime;
  * 게임 종료 후 개인별 결과 기록
  * - 승/패 여부
  * - 역할별 결과 저장
- * - 통계 집계의 기준 데이터
+ * - 게임 종료 후 결과 저장
  */
 @Entity
 @Table(name = "game_results")

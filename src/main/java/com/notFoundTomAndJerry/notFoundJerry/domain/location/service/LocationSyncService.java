@@ -3,6 +3,8 @@ package com.notFoundTomAndJerry.notFoundJerry.domain.location.service;
 import com.notFoundTomAndJerry.notFoundJerry.domain.location.dto.external.PublicParkResponse.ParkItem;
 import com.notFoundTomAndJerry.notFoundJerry.domain.location.entity.Location;
 import com.notFoundTomAndJerry.notFoundJerry.domain.location.repository.LocationRepository;
+import com.notFoundTomAndJerry.notFoundJerry.global.exception.BusinessException;
+import com.notFoundTomAndJerry.notFoundJerry.global.exception.domain.LocationErrorCode;
 import java.util.List;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -26,7 +28,8 @@ public class LocationSyncService {
     List<ParkItem> items = locationExternalApiService.fetchParkData(pageNo, numOfRows);
 
     if (items.isEmpty()) {
-      return;
+      log.warn("수집된 공원 데이터가 없습니다.");
+      throw new BusinessException(LocationErrorCode.EXTERNAL_API_ERROR);
     }
 
     log.info("가져온 데이터 개수: {}", items.size());

@@ -43,6 +43,9 @@ public class User {
   @Column(nullable = false, unique = true, length = 50)
   private String nickname;
 
+  @Column(length = 10)
+  private String age;
+
   @Enumerated(EnumType.STRING)
   @Column(nullable = false, length = 20)
   private UserStatus status;

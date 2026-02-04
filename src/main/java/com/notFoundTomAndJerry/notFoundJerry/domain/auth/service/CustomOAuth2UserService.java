@@ -74,6 +74,7 @@ public class CustomOAuth2UserService extends DefaultOAuth2UserService {
           User newUser = User.builder()
               .email(userInfo.getEmail())
               .nickname(nickname)
+              .age(userInfo.getAge())
               .status(UserStatus.ACTIVE)
               .providerType(ProviderType.valueOf(userInfo.getProvider().toUpperCase()))
               .createdAt(LocalDateTime.now())

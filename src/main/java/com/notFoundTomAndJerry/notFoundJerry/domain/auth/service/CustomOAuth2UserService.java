@@ -1,6 +1,8 @@
 package com.notFoundTomAndJerry.notFoundJerry.domain.auth.service;
 
 import com.notFoundTomAndJerry.notFoundJerry.domain.auth.dto.info.GoogleOAuth2UserInfo;
+import com.notFoundTomAndJerry.notFoundJerry.domain.auth.dto.info.KakaoOAuth2UserInfo;
+import com.notFoundTomAndJerry.notFoundJerry.domain.auth.dto.info.NaverOAuth2UserInfo;
 import com.notFoundTomAndJerry.notFoundJerry.domain.auth.dto.info.OAuth2UserInfo;
 import com.notFoundTomAndJerry.notFoundJerry.domain.auth.entity.OAuthAccount;
 import com.notFoundTomAndJerry.notFoundJerry.domain.auth.entity.enums.OAuthProvider;
@@ -39,13 +41,15 @@ public class CustomOAuth2UserService extends DefaultOAuth2UserService {
     String registrationId = userRequest.getClientRegistration().getRegistrationId();
 
     OAuth2UserInfo oAuth2UserInfo = null;
+
     if (registrationId.equals("google")) {
       oAuth2UserInfo = new GoogleOAuth2UserInfo(oAuth2User.getAttributes());
-    }
-    // else if (registrationId.equals("naver")) { ... }
-    // else if (registrationId.equals("kakao")) { ... }
-    else {
-      log.error("지원하지 않는 소셜 로그인입니다.");
+    } else if (registrationId.equals("naver")) {
+      oAuth2UserInfo = new NaverOAuth2UserInfo(oAuth2User.getAttributes());
+    } else if (registrationId.equals("kakao")) {
+      oAuth2UserInfo = new KakaoOAuth2UserInfo(oAuth2User.getAttributes());
+    } else {
+      log.error("지원하지 않는 소셜 로그인입니다. ID: {}", registrationId);
       throw new OAuth2AuthenticationException("지원하지 않는 소셜 로그인입니다.");
     }
 
@@ -70,6 +74,7 @@ public class CustomOAuth2UserService extends DefaultOAuth2UserService {
           User newUser = User.builder()
               .email(userInfo.getEmail())
               .nickname(nickname)
+              .age(userInfo.getAge())
               .status(UserStatus.ACTIVE)
               .providerType(ProviderType.valueOf(userInfo.getProvider().toUpperCase()))
               .createdAt(LocalDateTime.now())

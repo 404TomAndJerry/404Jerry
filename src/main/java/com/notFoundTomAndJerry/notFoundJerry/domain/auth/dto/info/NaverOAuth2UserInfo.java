@@ -34,6 +34,11 @@ public class NaverOAuth2UserInfo implements OAuth2UserInfo {
   }
 
   @Override
+  public String getAge() {
+    return (String) response.get("age");
+  }
+
+  @Override
   public Map<String, Object> getAttributes() {
     return attributes;
   }

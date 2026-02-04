@@ -6,14 +6,14 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
 @RestController
-@RequestMapping
+@RequestMapping("api/admin/batch")
 @RequiredArgsConstructor
 public class AdminBatchController {
 
   private final PublicDataCollector collector;
   private final LocationSyncBatch syncBatch;
 
-  @PostMapping("/admin/batch/run")
+  @PostMapping("/run")
   public String runBatch() {
     // 공공데이터에서 좌표 가져오기 (필터링 된 거)
     collector.collect(1000);

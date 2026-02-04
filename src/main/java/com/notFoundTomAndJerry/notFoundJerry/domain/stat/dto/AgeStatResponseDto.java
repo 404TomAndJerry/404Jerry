@@ -11,7 +11,7 @@ import lombok.Getter;
 @AllArgsConstructor
 public class AgeStatResponseDto {
 
-  private AgeGroup ageGroup;      // "20s"
+  private String ageGroup;      // "20s"
   private Long policeCount;   // 120
   private Long thiefCount;    // 80
   private String preferredRole; // "POLICE"

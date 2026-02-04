@@ -39,8 +39,17 @@ public class KakaoOAuth2UserInfo implements OAuth2UserInfo {
   }
 
   @Override
-  public String getAge() {
-    return (String) kakaoAccount.get("age_range");
+  public Integer getAge() {
+    String ageRange = (String) kakaoAccount.get("age_range");
+
+    if (ageRange == null) return null;
+
+    // "20~29" 에서 "~" 기준 앞부분인 "20"만 가져옴
+    try {
+      return Integer.parseInt(ageRange.split("~")[0]);
+    } catch (NumberFormatException e) {
+      return null;
+    }
   }
 
   @Override

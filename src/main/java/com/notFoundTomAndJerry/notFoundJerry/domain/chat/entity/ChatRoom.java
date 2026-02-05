@@ -7,6 +7,7 @@ import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
 import jakarta.persistence.JoinColumn;
+import jakarta.persistence.MapsId;
 import jakarta.persistence.OneToOne;
 import jakarta.persistence.Table;
 import lombok.AccessLevel;
@@ -30,7 +31,6 @@ import org.hibernate.annotations.OnDeleteAction;
 public class ChatRoom {
 
   @Id
-  @GeneratedValue(strategy = GenerationType.IDENTITY)
   private Long id;
 
   /**
@@ -40,6 +40,7 @@ public class ChatRoom {
    소프트 삭제를 지원히지 않음.
    이유는 게임시작전에만 사용하는 것이기에, 신고는 그떄 바로 내용을 따로 저장하는걸로 나중에 추후 합의
    */
+  @MapsId
   @OneToOne(fetch = FetchType.LAZY)
   @JoinColumn(name = "room_id", nullable = false, unique = true)
   @OnDelete(action = OnDeleteAction.CASCADE)

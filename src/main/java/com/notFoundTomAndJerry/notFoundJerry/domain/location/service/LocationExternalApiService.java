@@ -2,6 +2,8 @@ package com.notFoundTomAndJerry.notFoundJerry.domain.location.service;
 
 import com.notFoundTomAndJerry.notFoundJerry.domain.location.dto.external.PublicParkResponse;
 import com.notFoundTomAndJerry.notFoundJerry.domain.location.dto.external.PublicParkResponse.ParkItem;
+import com.notFoundTomAndJerry.notFoundJerry.global.exception.BusinessException;
+import com.notFoundTomAndJerry.notFoundJerry.global.exception.domain.LocationErrorCode;
 import java.net.URI;
 import java.util.Collections;
 import java.util.List;
@@ -45,6 +47,7 @@ public class LocationExternalApiService {
       }
     } catch (Exception e) {
       log.error("API 호출 에러: {}", e.getMessage());
+      throw new BusinessException(LocationErrorCode.EXTERNAL_API_ERROR);
     }
     return Collections.emptyList();
   }

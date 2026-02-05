@@ -1,12 +1,15 @@
 package com.notFoundTomAndJerry.notFoundJerry.domain.auth.service;
 
 import com.notFoundTomAndJerry.notFoundJerry.domain.auth.dto.info.GoogleOAuth2UserInfo;
+import com.notFoundTomAndJerry.notFoundJerry.domain.auth.dto.info.KakaoOAuth2UserInfo;
+import com.notFoundTomAndJerry.notFoundJerry.domain.auth.dto.info.NaverOAuth2UserInfo;
 import com.notFoundTomAndJerry.notFoundJerry.domain.auth.dto.info.OAuth2UserInfo;
 import com.notFoundTomAndJerry.notFoundJerry.domain.auth.entity.OAuthAccount;
 import com.notFoundTomAndJerry.notFoundJerry.domain.auth.entity.enums.OAuthProvider;
 import com.notFoundTomAndJerry.notFoundJerry.domain.auth.entity.enums.ProviderType;
 import com.notFoundTomAndJerry.notFoundJerry.domain.auth.repository.OAuthAccountRepository;
 import com.notFoundTomAndJerry.notFoundJerry.domain.user.entity.User;
+import com.notFoundTomAndJerry.notFoundJerry.domain.user.entity.enums.UserStatus;
 import com.notFoundTomAndJerry.notFoundJerry.domain.user.repository.UserRepository;
 import com.notFoundTomAndJerry.notFoundJerry.global.security.CustomPrincipal;
 import java.time.LocalDateTime;
@@ -38,13 +41,15 @@ public class CustomOAuth2UserService extends DefaultOAuth2UserService {
     String registrationId = userRequest.getClientRegistration().getRegistrationId();
 
     OAuth2UserInfo oAuth2UserInfo = null;
+
     if (registrationId.equals("google")) {
       oAuth2UserInfo = new GoogleOAuth2UserInfo(oAuth2User.getAttributes());
-    }
-    // else if (registrationId.equals("naver")) { ... }
-    // else if (registrationId.equals("kakao")) { ... }
-    else {
-      log.error("지원하지 않는 소셜 로그인입니다.");
+    } else if (registrationId.equals("naver")) {
+      oAuth2UserInfo = new NaverOAuth2UserInfo(oAuth2User.getAttributes());
+    } else if (registrationId.equals("kakao")) {
+      oAuth2UserInfo = new KakaoOAuth2UserInfo(oAuth2User.getAttributes());
+    } else {
+      log.error("지원하지 않는 소셜 로그인입니다. ID: {}", registrationId);
       throw new OAuth2AuthenticationException("지원하지 않는 소셜 로그인입니다.");
     }
 
@@ -69,9 +74,10 @@ public class CustomOAuth2UserService extends DefaultOAuth2UserService {
           User newUser = User.builder()
               .email(userInfo.getEmail())
               .nickname(nickname)
+              .age(userInfo.getAge())
+              .status(UserStatus.ACTIVE)
               .providerType(ProviderType.valueOf(userInfo.getProvider().toUpperCase()))
               .createdAt(LocalDateTime.now())
-              // User 엔티티 필드에 맞춰서 채워넣으세요
               .build();
           userRepository.save(newUser);
 

@@ -31,6 +31,11 @@ public class GoogleOAuth2UserInfo implements OAuth2UserInfo {
   }
 
   @Override
+  public Integer getAge() {
+    return null; // 구글은 기본적으로 나이 제공 안 함
+  }
+
+  @Override
   public Map<String, Object> getAttributes() {
     return attributes;
   }

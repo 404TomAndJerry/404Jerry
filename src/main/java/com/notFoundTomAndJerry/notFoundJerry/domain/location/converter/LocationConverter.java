@@ -7,7 +7,9 @@ import org.locationtech.jts.geom.Coordinate;
 import org.locationtech.jts.geom.GeometryFactory;
 import org.locationtech.jts.geom.Point;
 import org.locationtech.jts.geom.PrecisionModel;
+import org.springframework.stereotype.Component;
 
+@Component
 public class LocationConverter {
 
   private final GeometryFactory geometryFactory = new GeometryFactory(new PrecisionModel(), 4326);

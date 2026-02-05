@@ -6,12 +6,34 @@ spring:
   application:
     name: 404Jerry
 
+  # 1. 데이터베이스 설정
+  datasource:
+    url: ${DB_URL}
+    username: ${DB_USER}
+    password: ${DB_PASSWORD}
+    driver-class-name: com.mysql.cj.jdbc.Driver
+
+  # 2. JPA & Hibernate 설정
+  jpa:
+    hibernate:
+      ddl-auto: validate
+    properties:
+      hibernate:
+        dialect: org.hibernate.dialect.MySQLDialect
+        format_sql: false # 운영 환경에서는 성능을 위해 false 권장
+        show_sql: false
+        use_sql_comments: false
+        jdbc:
+          time_zone: Asia/Seoul
+    open-in-view: false
+
+  # 3. Redis 설정
   data:
     redis:
       host: ${REDIS_HOST}
       port: 6379
 
-  # OAuth2
+  # 4. OAuth2 설정
   security:
     oauth2:
       client:
@@ -51,65 +73,38 @@ spring:
             user-info-uri: https://kapi.kakao.com/v2/user/me
             user-name-attribute: id
 
-  # JWT Secret (실제 운영 시에는 환경 변수나 Vault 사용 권장)
-  # 터미널에서 openssl을 사용하여 무작위 64바이트(Base64 인코딩) 키를 생성
-  # openssl rand -base64 64
+# --------------------------------------------------
+# 외부 라이브러리 및 독자 설정 (spring 계층 밖)
+# --------------------------------------------------
+
+# JWT 설정
 jwt:
   accsecret: ${JWT_ACCSECRET}
   refsecret: ${JWT_REFSECRET}
-  access-token-expiration: 1800000      # 30분 (1000 * 60 * 30)
-  refresh-token-expiration: 604800000   # 7일 (1000 * 60 * 60 * 24 * 7)
+  access-token-expiration: 1800000      # 30분
+  refresh-token-expiration: 604800000   # 7일
 
-  # JPA & Hibernate 설정
-  jpa:
-    hibernate:
-      # 운영 환경에서는 절대 'create'나 'update'를 사용하지 않습니다.
-      ddl-auto: validate
-    properties:
-      hibernate:
-        # MySQL 9.x 호환
-        dialect: org.hibernate.dialect.MySQLDialect
-        format_sql: true
-        show_sql: false
-        use_sql_comments: true
-        jdbc:
-          time_zone: Asia/Seoul
-          # batch_versioned_data: true
-          # batch_size: 30
-        # order_inserts: true
-        # order_updates: true
-    # OSIV 비활성화 (백엔드 API 추천)
-    open-in-view: false
+# 서버 설정
+server:
+  port: 8080
+  servlet:
+    encoding:
+      charset: UTF-8
+      enabled: true
+      force: true
 
-  # MYSQL_DataSource 설정 (MySQL 8.0)
-  datasource:
-    url: ${DB_URL}
-    username: ${DB_USER}
-    password: ${DB_PASSWORD}
-    driver-class-name: com.mysql.cj.jdbc.Driver
+# 로깅 설정
+logging:
+  level:
+    root: info
+    org.hibernate.SQL: warn
 
-  # 스프링 서버 설정
-  server:
-    port: 8080 # 젠킨스는 8081
-    servlet:
-      context-path:
-      encoding:
-        charset: UTF-8
-        enabled: true
-        force: true
-
-  logging:
-    level:
-      root: info
-      # 운영 서버는 로그를 최소화하여 성능 유지
-      org.hibernate.SQL: warn
-
-# kakao API key
+# Kakao API 전용 (독자 설정)
 kakao:
   api:
     key: ${KAKAO_API_KEY}
 
-# 공공데이터
+# 공공데이터 (독자 설정)
 public-data:
   api:
     url: ${PUBLIC_DATA_URL}

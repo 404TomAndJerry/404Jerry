@@ -13,7 +13,7 @@ public class UserResponse {
   private Long id;
   private String email;
   private String nickname;
-  private String age;
+  private Integer age;
   private UserStatus status;
   private ProviderType providerType;
 

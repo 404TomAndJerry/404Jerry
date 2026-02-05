@@ -12,11 +12,13 @@ import java.util.Collections;
 import java.util.List;
 import java.util.stream.Collectors;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.domain.Slice;
 import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+@Slf4j
 @Service
 @RequiredArgsConstructor
 @Transactional(readOnly = true)
@@ -29,12 +31,11 @@ public class ChatService {
 
   @Transactional
   public void sendMessage(Long roomId, Long senderId, String content) {
-    // 1. 방 존재 여부 먼저 확인 (방이 없으면 명확한 Custom Exception 발생)
-    ChatRoom room = chatRoomRepository.findById(roomId)
-        .orElseThrow(() -> new BusinessException(ChatErrorCode.CHAT_ROOM_NOT_FOUND_ID,
-            String.format(ChatErrorCode.CHAT_ROOM_NOT_FOUND_ID.getMessage(), roomId)));
+    // 1. 방 존재 여부 먼저 확인
+    ChatRoom room = getChatRoomId(roomId);
+
     // RDB 저장 (영구 보관용 - 엔티티 생성 및 저장)
-    ChatRoom chatRoom = chatRoomRepository.getReferenceById(roomId);
+    ChatRoom chatRoom = chatRoomRepository.getReferenceById(room.getId());
     ChatMessage chatMessage = ChatMessage.builder()
         .chatRoom(chatRoom)
         .senderId(senderId)
@@ -46,16 +47,19 @@ public class ChatService {
     ChatMessageDto messageDto = ChatMessageDto.from(chatMessage);
 
     // 레디스에 저장(최신 100개 유지)
-    chatMessageRedisRepository.sendMessage(roomId, messageDto);
+    chatMessageRedisRepository.sendMessage(room.getId(), messageDto);
 
     // 실시간 전송 (구독자들에게)
-    redisTemplate.convertAndSend("chat:room:" + roomId, messageDto);
+    redisTemplate.convertAndSend(chatMessageRedisRepository.generateKey(room.getId()), messageDto);
   }
+
 
   // 초기 100개 가져오기
   public List<ChatMessageDto> getMessages(Long roomId) {
+    // 1. 방 존재 여부 먼저 확인
+    ChatRoom room = getChatRoomId(roomId);
     // 레디스에서 먼저 조회, 여기에는 100개만 저장되어있음.
-    List<ChatMessageDto> redisMessages = chatMessageRedisRepository.findAll(roomId);
+    List<ChatMessageDto> redisMessages = chatMessageRedisRepository.findAll(room.getId());
 
     // Redis에 데이터가 있으면 바로 반환
     if (!redisMessages.isEmpty()) {
@@ -63,7 +67,7 @@ public class ChatService {
     }
     // 없으면 RDB 조회
     List<ChatMessage> dbMessages = chatMessageRepository.findTop100ByChatRoomIdOrderByCreatedAtDesc(
-        roomId);
+        room.getId());
 
     List<ChatMessageDto> result = dbMessages.stream()
         .map(ChatMessageDto::from)
@@ -75,21 +79,37 @@ public class ChatService {
 
   // 무한 스크롤 (과거 내역 더보기), 무한스크롤은 프론트가 처리
   public Slice<ChatMessageDto> getPastMessages(Long roomId, Long lastMessageId) {
+    // 1. 방 존재 여부 먼저 확인
+    ChatRoom room = getChatRoomId(roomId);
     // RDB에서 페이징 쿼리로 가져옴
     Long cursorId = (lastMessageId == null) ? Long.MAX_VALUE : lastMessageId;
     Slice<ChatMessage> messages = chatMessageRepository.findTop20ByChatRoomIdAndIdLessThanOrderByCreatedAtDesc(
-        roomId, cursorId);
+        room.getId(), cursorId);
     return messages.map(ChatMessageDto::from);
   }
 
-  // 삭제
-  public void deleteChatRoom(Long roomId) {
+  /**
+   * 게임 종료 시 채팅방 '내용' 초기화
+   * (방 엔티티는 살려두고, 메시지만 정리)
+   */
+  @Transactional
+  public void resetChatRoom(Long roomId) {
+    // 방 존재 여부 먼저 확인
+    ChatRoom room = getChatRoomId(roomId);
+    // 1. Redis 캐시 삭제 (가장 중요 - 실시간 채팅창 클리어)
+    chatMessageRedisRepository.deleteChatRoom(room.getId());
+    // 2. DB 메시지 처리
+    chatMessageRepository.DeleteAllByRoomId(room.getId());
+    log.info("Redis 캐시 삭제, DB 메세지 삭제");
+
+  }
+
+  private ChatRoom getChatRoomId(Long roomId) {
+    // 1. 방 존재 여부 먼저 확인 (방이 없으면 명확한 Custom Exception 발생)
     ChatRoom room = chatRoomRepository.findById(roomId)
-        .orElseThrow(() -> new BusinessException(ChatErrorCode.CHAT_ROOM_NOT_FOUND));
-    // DB 삭제: Cascade 설정 덕분에 ChatMessage들도 같이 삭제됨
-    chatRoomRepository.deleteById(roomId);
-    // Redis 캐시 삭제: 이거 안 하면 찌꺼기 남음
-    chatMessageRedisRepository.deleteChatRoom(roomId);
+        .orElseThrow(() -> new BusinessException(ChatErrorCode.CHAT_ROOM_NOT_FOUND_ID,
+            String.format(ChatErrorCode.CHAT_ROOM_NOT_FOUND_ID.getMessage(), roomId)));
+    return room;
   }
 
 }

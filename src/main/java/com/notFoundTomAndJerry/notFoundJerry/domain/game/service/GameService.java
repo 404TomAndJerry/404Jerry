@@ -1,5 +1,6 @@
 package com.notFoundTomAndJerry.notFoundJerry.domain.game.service;
 
+import com.notFoundTomAndJerry.notFoundJerry.domain.chat.service.ChatService;
 import com.notFoundTomAndJerry.notFoundJerry.domain.game.converter.GameConverter;
 import com.notFoundTomAndJerry.notFoundJerry.domain.game.dto.request.GameEndRequest;
 import com.notFoundTomAndJerry.notFoundJerry.domain.game.dto.request.GameStartRequest;
@@ -7,17 +8,25 @@ import com.notFoundTomAndJerry.notFoundJerry.domain.game.dto.response.GameEndRes
 import com.notFoundTomAndJerry.notFoundJerry.domain.game.dto.response.GameStartResponse;
 import com.notFoundTomAndJerry.notFoundJerry.domain.game.dto.response.GameStatusResponse;
 import com.notFoundTomAndJerry.notFoundJerry.domain.game.entity.Game;
+import com.notFoundTomAndJerry.notFoundJerry.domain.game.entity.GamePlayer;
 import com.notFoundTomAndJerry.notFoundJerry.domain.game.entity.enums.EndReason;
 import com.notFoundTomAndJerry.notFoundJerry.domain.game.entity.enums.GameStatus;
 import com.notFoundTomAndJerry.notFoundJerry.domain.game.entity.enums.PlayerRole;
 import com.notFoundTomAndJerry.notFoundJerry.domain.game.entity.enums.RoleAssignType;
 import com.notFoundTomAndJerry.notFoundJerry.domain.game.repository.GamePlayerRepository;
 import com.notFoundTomAndJerry.notFoundJerry.domain.game.repository.GameRepository;
+import com.notFoundTomAndJerry.notFoundJerry.domain.game.repository.RunawayLogRepository;
+import com.notFoundTomAndJerry.notFoundJerry.domain.location.entity.Location;
+import com.notFoundTomAndJerry.notFoundJerry.domain.location.repository.LocationRepository;
 import com.notFoundTomAndJerry.notFoundJerry.domain.room.entity.Room;
 import com.notFoundTomAndJerry.notFoundJerry.domain.room.entity.RoomParticipant;
 import com.notFoundTomAndJerry.notFoundJerry.domain.room.repository.RoomRepository;
+import com.notFoundTomAndJerry.notFoundJerry.domain.stat.facade.GameStatFacade;
+import com.notFoundTomAndJerry.notFoundJerry.domain.user.entity.User;
+import com.notFoundTomAndJerry.notFoundJerry.domain.user.repository.UserRepository;
 import com.notFoundTomAndJerry.notFoundJerry.global.exception.BusinessException;
 import com.notFoundTomAndJerry.notFoundJerry.global.exception.domain.GameErrorCode;
+import com.notFoundTomAndJerry.notFoundJerry.global.exception.domain.StatErrorCode;
 import java.util.List;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
@@ -42,6 +51,11 @@ public class GameService {
   private final GamePlayerService gamePlayerService;
   private final GameConverter gameConverter;
   private final RoomRepository roomRepository;
+  private final UserRepository userRepository; // 유저 아이디 확인
+  private final GameStatFacade gameStatFacade; // 통계 조회용 문지기
+  private final RunawayLogRepository runawayLogRepository; // 탈주 기록 확인용
+  private final LocationRepository locationRepository; // 지역 정보 조회
+  private final ChatService chatService; // ChatService 주입
 
   // 새로운 게임 생성, roomId 방 ID, 생성된 게임
   @Transactional
@@ -110,6 +124,11 @@ public class GameService {
     Room room = roomRepository.findByIdWithParticipants(game.getRoomId())
         .orElseThrow(() -> new BusinessException(GameErrorCode.GAME_NOT_FOUND, "게임을 찾을 수 없습니다: " + game.getRoomId()));
 
+    // LocationRepository를 통해 Room의 locationId에 해당하는 regionName 추출
+    Location location = locationRepository.findById(room.getLocationId())
+        .orElseThrow(() -> new BusinessException(StatErrorCode.LOCATION_NOT_FOUND, "위치 정보를 찾을 수 없습니다."));
+    String regionName = location.getRegionName();
+
     // 종료 사유에 따라 승리 팀 자동 결정
     EndReason endReason = request.getEndReason();
     PlayerRole winnerTeam = endReason.getWinner();
@@ -127,6 +146,29 @@ public class GameService {
         winnerTeam,
         endReason.getDescription()
     );
+
+    // 게임에 참여한 플레이어 목록을 가져와서 한 명씩 통계 업데이트
+    List<GamePlayer> players = gamePlayerRepository.findByGameId(gameId);
+    for (GamePlayer player : players) {
+      // 유저의 나이 정보를 가져오기 위해 조회
+      User user = userRepository.findById(player.getUserId())
+          .orElseThrow(() -> new RuntimeException("사용자를 찾을 수 없습니다."));
+
+      // 탈주 여부 확인
+      boolean isRunaway = runawayLogRepository.existsByGameIdAndUserId(gameId, player.getUserId());
+
+      gameStatFacade.processGameStat(
+          player.getUserId(),
+          player.getRole(),
+          player.getRole() == winnerTeam, // 승리 여부 계산
+          isRunaway,                          // 탈주 여부 (필요 시 로직 추가)
+          regionName,                       // 지역 정보 (room에서 가져오거나 기본값)
+          user.getAge()
+      );
+    }
+
+    // 게임이 끝났으면, 채팅 내역을 초기화 한다.
+    chatService.resetChatRoom(game.getRoomId());
 
     // Response 생성 (Converter 사용)
     return gameConverter.toEndResponse(game);

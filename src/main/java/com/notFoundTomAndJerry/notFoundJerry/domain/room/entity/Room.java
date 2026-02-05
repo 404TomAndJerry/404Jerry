@@ -215,6 +215,12 @@ public class Room {
         this.status = RoomStatus.WAITING;
     }
 
+    public void transitionToWaiting() {
+        if (this.status != RoomStatus.FINISHED) {
+            throw new BusinessException(RoomErrorCode.INVALID_ROOM_STATUS);
+        }
+        this.status = RoomStatus.WAITING;
+    }
 
     private RoomParticipant findParticipantByUserId(Long userId) {
         return participants.stream()

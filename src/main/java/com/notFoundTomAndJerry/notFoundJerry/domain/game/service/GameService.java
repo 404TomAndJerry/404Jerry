@@ -26,7 +26,9 @@ import com.notFoundTomAndJerry.notFoundJerry.domain.user.entity.User;
 import com.notFoundTomAndJerry.notFoundJerry.domain.user.repository.UserRepository;
 import com.notFoundTomAndJerry.notFoundJerry.global.exception.BusinessException;
 import com.notFoundTomAndJerry.notFoundJerry.global.exception.domain.GameErrorCode;
+import com.notFoundTomAndJerry.notFoundJerry.global.exception.domain.RoomErrorCode;
 import com.notFoundTomAndJerry.notFoundJerry.global.exception.domain.StatErrorCode;
+import com.notFoundTomAndJerry.notFoundJerry.global.exception.domain.UserErrorCode;
 import java.util.List;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
@@ -78,11 +80,11 @@ public class GameService {
   public GameStartResponse startGame(GameStartRequest request) {
     Long roomId = request.getRoomId();
 
-    Game game = createGame(roomId);
-
-    // Room 정보 조회 (참가자 포함)
+    // Room 정보 먼저 조회 (없으면 게임 생성하지 않음 → orphan 방지)
     Room room = roomRepository.findByIdWithParticipants(roomId)
-        .orElseThrow(() -> new BusinessException(GameErrorCode.GAME_NOT_FOUND, "게임을 찾을 수 없습니다: " + roomId));
+        .orElseThrow(() -> new BusinessException(RoomErrorCode.ROOM_NOT_FOUND));
+
+    Game game = createGame(roomId);
 
     // Room 상태를 RUNNING으로 변경
     room.transitionToRunning();
@@ -122,7 +124,7 @@ public class GameService {
 
     // Room 정보 조회
     Room room = roomRepository.findByIdWithParticipants(game.getRoomId())
-        .orElseThrow(() -> new BusinessException(GameErrorCode.GAME_NOT_FOUND, "게임을 찾을 수 없습니다: " + game.getRoomId()));
+        .orElseThrow(() -> new BusinessException(RoomErrorCode.ROOM_NOT_FOUND, "방 " + game.getRoomId() + "을 찾을 수 없습니다."));
 
     // LocationRepository를 통해 Room의 locationId에 해당하는 regionName 추출
     Location location = locationRepository.findById(room.getLocationId())
@@ -136,7 +138,7 @@ public class GameService {
     // 게임 상태를 FINISHED로 변경 및 종료 사유 저장
     game.finish(endReason.getDescription());
 
-    // Room 상태를 FINISHED로 변경
+    // Room 상태를 FINISHED로 변경 (MVP 투표가 모두 끝나면 MvpVoteService에서 WAITING으로 전환)
     room.transitionToFinished();
     roomRepository.save(room);
 
@@ -152,7 +154,7 @@ public class GameService {
     for (GamePlayer player : players) {
       // 유저의 나이 정보를 가져오기 위해 조회
       User user = userRepository.findById(player.getUserId())
-          .orElseThrow(() -> new RuntimeException("사용자를 찾을 수 없습니다."));
+          .orElseThrow(() -> new BusinessException(UserErrorCode.USER_NOT_FOUND, "사용자를 찾을 수 없습니다: " + player.getUserId()));
 
       // 탈주 여부 확인
       boolean isRunaway = runawayLogRepository.existsByGameIdAndUserId(gameId, player.getUserId());
@@ -186,9 +188,9 @@ public class GameService {
     return gameRepository.existsByRoomIdAndStatus(roomId, GameStatus.RUNNING);
   }
 
-  // 방 ID로 게임 조회, roomId 방 ID, 게임 엔티티
+  /** 방 ID로 최신 게임 1건 조회 */
   public Game findByRoomId(Long roomId) {
-    return gameRepository.findByRoomId(roomId)
+    return gameRepository.findTopByRoomIdOrderByCreatedAtDesc(roomId)
         .orElseThrow(() -> new BusinessException(GameErrorCode.GAME_NOT_FOUND, "해당 방의 게임을 찾을 수 없습니다: " + roomId));
   }
 }

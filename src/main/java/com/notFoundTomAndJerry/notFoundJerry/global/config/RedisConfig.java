@@ -57,8 +57,8 @@ public class RedisConfig {
     RedisMessageListenerContainer container = new RedisMessageListenerContainer();
     container.setConnectionFactory(connectionFactory);
 
-    // "chat:room:*" 로 시작하는 모든 토픽의 메시지를 듣겠다!
-    container.addMessageListener(listenerAdapter, new PatternTopic("chat:room:*"));
+    // "chat:rooms:*" 로 시작하는 모든 토픽의 메시지를 듣겠다!
+    container.addMessageListener(listenerAdapter, new PatternTopic("chat:rooms:*"));
 
     return container;
   }
@@ -71,7 +71,7 @@ public class RedisConfig {
 
   @Bean
   public ChannelTopic channelTopic() {
-    return new ChannelTopic("chat:room");
+    return new ChannelTopic("chat:rooms");
   }
 
 }

@@ -44,6 +44,8 @@ public class SecurityConfig {
         .authorizeHttpRequests(auth -> auth
             // 인증 없이 접근 가능한 경로
             .requestMatchers(
+                "/index.html/**",
+                "/ws-stomp/**",
                 "/auth/**", // 소셜 관련 경로 허용
                 "/api/auth/**", // 소셜 관련 경로 허용
                 "/login/**", // 소셜 관련 경로 허용

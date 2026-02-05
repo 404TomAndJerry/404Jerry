@@ -1,9 +1,12 @@
 package com.notFoundTomAndJerry.notFoundJerry.domain.chat.repository;
 
 import com.notFoundTomAndJerry.notFoundJerry.domain.chat.entity.ChatMessage;
+import io.lettuce.core.dynamic.annotation.Param;
 import java.util.List;
 import org.springframework.data.domain.Slice;
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Modifying;
+import org.springframework.data.jpa.repository.Query;
 import org.springframework.stereotype.Repository;
 
 @Repository
@@ -15,5 +18,9 @@ public interface ChatMessageRepository extends JpaRepository<ChatMessage, Long> 
   // 📜무한 스크롤용, 과거 내역 조회용 레디스에 없는 101번째 이후에 데이터를 페이징으로 가져올때 사용한다. 이러면 전체 카운터새는 시간은 사라진다.
   Slice<ChatMessage> findTop20ByChatRoomIdAndIdLessThanOrderByCreatedAtDesc(Long chatRoomId,
       Long lastMessageId);
+
+  @Modifying(clearAutomatically = true) // 필수: 1차 캐시와 DB 싱크를 맞춤
+  @Query("DELETE FROM ChatMessage m WHERE m.chatRoom.room.id = :roomId")
+  void DeleteAllByRoomId(@Param("roomId") Long roomId);
 
 }

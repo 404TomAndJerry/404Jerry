@@ -1,7 +1,6 @@
 package com.notFoundTomAndJerry.notFoundJerry.domain.stat.service;
 
 import com.notFoundTomAndJerry.notFoundJerry.domain.game.entity.enums.PlayerRole;
-import com.notFoundTomAndJerry.notFoundJerry.domain.stat.dto.UserStatResponseDto;
 import com.notFoundTomAndJerry.notFoundJerry.domain.stat.entity.enums.AgeGroup;
 import com.notFoundTomAndJerry.notFoundJerry.domain.stat.repository.RedisStatRepository;
 import com.notFoundTomAndJerry.notFoundJerry.global.exception.BusinessException;
@@ -10,7 +9,6 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Service;
-import org.springframework.transaction.annotation.Transactional;
 
 @Service
 @RequiredArgsConstructor
@@ -23,7 +21,7 @@ public class RedisStatService {
    * Facade에서 호출하는 통합 업데이트 메서드
    */
   @Async(value = "statTaskExecutor")
-  public void updateAllStats(Long userId, Double winRate, String regionName, int age, PlayerRole role) {
+  public void updateAllStats(Long userId, Double winRate, String regionName, Integer age, PlayerRole role) {
     try {
       // 1. 실시간 승률 랭킹
       redisStatRepository.updateWinRate(userId, winRate);

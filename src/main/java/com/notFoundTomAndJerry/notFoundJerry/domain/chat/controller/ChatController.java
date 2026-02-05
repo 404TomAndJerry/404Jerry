@@ -2,6 +2,7 @@ package com.notFoundTomAndJerry.notFoundJerry.domain.chat.controller;
 
 import com.notFoundTomAndJerry.notFoundJerry.domain.chat.dto.ChatMessageDto;
 import com.notFoundTomAndJerry.notFoundJerry.domain.chat.service.ChatService;
+import io.swagger.v3.oas.annotations.Operation;
 import java.util.List;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -34,12 +35,14 @@ public class ChatController {
   }
 
   @GetMapping("/api/chat/rooms/{roomId}/messages")
+  @Operation(summary = "채팅방 조회", description = "채팅방 조회 합니다.")
   public ResponseEntity<List<ChatMessageDto>> getInitialMessages(@PathVariable Long roomId) {
     List<ChatMessageDto> messages = chatService.getMessages(roomId);
     return ResponseEntity.ok(messages);
   }
 
   @GetMapping("/api/chat/rooms/{roomId}/messages/history")
+  @Operation(summary = "채팅창 무한 스크롤", description = "기존 100개 이후에는 한개식 미리 로드.")
   public ResponseEntity<Slice<ChatMessageDto>> getPastMessages(
       @PathVariable Long roomId,
       @RequestParam(required = false) Long lastMessageId // 커서 ID (없으면 처음으로 간주)
@@ -49,8 +52,9 @@ public class ChatController {
   }
 
   @DeleteMapping("/api/chat/rooms/{roomId}")
+  @Operation(summary = "방 ID로 채팅방 삭제", description = "방 ID로 채팅방 삭제")
   public ResponseEntity<Void> deleteChatRoom(@PathVariable Long roomId) {
-    chatService.deleteChatRoom(roomId);
+    chatService.resetChatRoom(roomId);
     return ResponseEntity.ok().build();
   }
 

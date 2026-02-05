@@ -3,8 +3,11 @@ package com.notFoundTomAndJerry.notFoundJerry.domain.room.converter;
 import com.notFoundTomAndJerry.notFoundJerry.domain.room.dto.response.JoinRoomResponse;
 import com.notFoundTomAndJerry.notFoundJerry.domain.room.dto.response.ParticipantDetailResponse;
 import com.notFoundTomAndJerry.notFoundJerry.domain.room.dto.response.RoomDetailResponse;
+import com.notFoundTomAndJerry.notFoundJerry.domain.room.dto.response.RoomListResponse;
 import com.notFoundTomAndJerry.notFoundJerry.domain.room.entity.Room;
 import com.notFoundTomAndJerry.notFoundJerry.domain.room.entity.RoomParticipant;
+import com.notFoundTomAndJerry.notFoundJerry.global.exception.BusinessException;
+import com.notFoundTomAndJerry.notFoundJerry.global.exception.domain.RoomErrorCode;
 import org.springframework.stereotype.Component;
 
 import java.util.Collections;
@@ -14,6 +17,23 @@ import java.util.stream.Collectors;
 
 @Component
 public class RoomConverter {
+
+    /**
+     * 방 목록 조회 DTO (닉네임 없음)
+     */
+    public RoomListResponse toListResponse(Room room) {
+        if (room == null) return null;
+
+        return RoomListResponse.builder()
+                .roomId(room.getId())
+                .locationId(room.getLocationId())
+                .title(room.getTitle())
+                .status(room.getStatus())
+                .maxPlayers(room.getMaxPlayers())
+                .currentParticipants(room.getCurrentParticipantCount())
+                .startTime(room.getStartTime())
+                .build();
+    }
 
     /**
      * 방 상세 정보 DTO 변환 (닉네임 포함)
@@ -62,7 +82,7 @@ public class RoomConverter {
         RoomParticipant participant = room.getParticipants().stream()
                 .filter(p -> p.getUserId().equals(userId))
                 .findFirst()
-                .orElseThrow(() -> new IllegalStateException("참가자 정보를 찾을 수 없습니다."));
+                .orElseThrow(() -> new BusinessException(RoomErrorCode.PARTICIPANT_NOT_FOUND));
 
         return JoinRoomResponse.builder()
                 .roomId(room.getId())

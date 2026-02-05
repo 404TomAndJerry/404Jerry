@@ -5,9 +5,14 @@ import com.notFoundTomAndJerry.notFoundJerry.domain.room.dto.request.CreateRoomR
 import com.notFoundTomAndJerry.notFoundJerry.domain.room.dto.request.RoomListRequest;
 import com.notFoundTomAndJerry.notFoundJerry.domain.room.dto.response.JoinRoomResponse;
 import com.notFoundTomAndJerry.notFoundJerry.domain.room.dto.response.RoomDetailResponse;
+import com.notFoundTomAndJerry.notFoundJerry.domain.room.dto.response.RoomListResponse;
 import com.notFoundTomAndJerry.notFoundJerry.domain.room.service.RoomService;
+import com.notFoundTomAndJerry.notFoundJerry.global.security.CustomPrincipal;
+import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
+import org.springdoc.core.annotations.ParameterObject;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
@@ -18,6 +23,7 @@ import org.springframework.web.bind.annotation.*;
 
 import java.net.URI;
 
+@Tag(name = "Room API", description = "방 관리 API")
 @RestController
 @RequestMapping("/api/rooms")
 @RequiredArgsConstructor
@@ -29,11 +35,12 @@ public class RoomController {
      * 방 생성
      */
     @PostMapping
+    @Operation(summary = "방 생성", description = "새로운 방을 생성합니다")
     public ResponseEntity<Long> createRoom(
-            @AuthenticationPrincipal(expression = "id") Long userId,
+            @AuthenticationPrincipal CustomPrincipal principal,
             @Valid @RequestBody CreateRoomRequest request
     ) {
-        Long roomId = roomService.createRoom(userId, request);
+        Long roomId = roomService.createRoom(principal.getUserId(), request);
         return ResponseEntity
                 .created(URI.create("/api/rooms/" + roomId))
                 .body(roomId);
@@ -43,11 +50,13 @@ public class RoomController {
      * 방 목록 조회
      */
     @GetMapping
-    public ResponseEntity<Page<RoomDetailResponse>> listRooms(
-            @ModelAttribute RoomListRequest request,
-            @PageableDefault(size = 10, sort = "createdAt", direction = Sort.Direction.DESC) Pageable pageable
+    @Operation(summary = "방 목록 조회", description = "필터 및 페이징을 적용하여 방 목록을 조회합니다")
+    public ResponseEntity<Page<RoomListResponse>> listRooms(
+            @ParameterObject RoomListRequest request,
+            @ParameterObject
+            @PageableDefault(size = 10, sort = "createdAt", direction = Sort.Direction.ASC) Pageable pageable
     ) {
-        Page<RoomDetailResponse> response = roomService.listRooms(request, pageable);
+        Page<RoomListResponse> response = roomService.listRooms(request, pageable);
         return ResponseEntity.ok(response);
     }
 
@@ -55,6 +64,7 @@ public class RoomController {
      * 방 상세 조회
      */
     @GetMapping("/{roomId}")
+    @Operation(summary = "방 상세 조회", description = "방의 상세 정보와 참여자 정보를 조회합니다")
     public ResponseEntity<RoomDetailResponse> getRoom(@PathVariable Long roomId) {
         RoomDetailResponse response = roomService.getRoom(roomId);
         return ResponseEntity.ok(response);
@@ -64,11 +74,12 @@ public class RoomController {
      * 방 참가
      */
     @PostMapping("/{roomId}/participants")
+    @Operation(summary = "방 참가", description = "방에 참가합니다")
     public ResponseEntity<JoinRoomResponse> joinRoom(
             @PathVariable Long roomId,
-            @AuthenticationPrincipal(expression = "id") Long userId
+            @AuthenticationPrincipal CustomPrincipal principal
     ) {
-        JoinRoomResponse response = roomService.joinRoom(roomId, userId);
+        JoinRoomResponse response = roomService.joinRoom(roomId, principal.getUserId());
         return ResponseEntity.ok(response);
     }
 
@@ -76,11 +87,12 @@ public class RoomController {
      * 방 나가기( 호스트가 나가면 방삭제 )
      */
     @DeleteMapping("/{roomId}/participants/me")
+    @Operation(summary = "방 나가기", description = "방에서 나갑니다. 방장이 나가면 방이 삭제됩니다")
     public ResponseEntity<Void> leaveRoom(
             @PathVariable Long roomId,
-            @AuthenticationPrincipal(expression = "id") Long userId
+            @AuthenticationPrincipal CustomPrincipal principal
     ) {
-        roomService.leaveRoom(roomId, userId);
+        roomService.leaveRoom(roomId, principal.getUserId());
         return ResponseEntity.noContent().build();
     }
 
@@ -88,6 +100,7 @@ public class RoomController {
      * 역할 변경
      */
     @PatchMapping("/{roomId}/participants/{targetUserId}/role")
+    @Operation(summary = "역할 변경", description = "참여자의 역할을 변경합니다 (MANUAL 모드만 가능)")
     public ResponseEntity<Void> changeRole(
             @PathVariable Long roomId,
             @PathVariable Long targetUserId,

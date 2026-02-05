@@ -21,7 +21,9 @@ public enum StatErrorCode implements ApiCode {
 
   // 외부 시스템 연동 실패 (Redis)
   REDIS_CONNECTION_ERROR(HttpStatus.INTERNAL_SERVER_ERROR.value(), 501, "Redis 서버 연결에 실패했습니다."),
-  STAT_UPDATE_FAILED(HttpStatus.INTERNAL_SERVER_ERROR.value(), 502, "통계 데이터 업데이트 중 오류가 발생했습니다.");
+  STAT_UPDATE_FAILED(HttpStatus.INTERNAL_SERVER_ERROR.value(), 502, "통계 데이터 업데이트 중 오류가 발생했습니다."),
+
+  LOCATION_NOT_FOUND(HttpStatus.NOT_FOUND.value(), 404,  "위치 정보를 찾을 수 없습니다.");
 
   private final Integer httpStatus;
   private final Integer code;

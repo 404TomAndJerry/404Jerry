@@ -12,6 +12,7 @@ import com.notFoundTomAndJerry.notFoundJerry.domain.user.entity.enums.UserStatus
 import com.notFoundTomAndJerry.notFoundJerry.domain.user.repository.UserRepository;
 import com.notFoundTomAndJerry.notFoundJerry.global.exception.BusinessException;
 import com.notFoundTomAndJerry.notFoundJerry.global.exception.domain.AuthErrorCode;
+import com.notFoundTomAndJerry.notFoundJerry.global.exception.domain.UserErrorCode;
 import com.notFoundTomAndJerry.notFoundJerry.global.security.JwtProvider;
 import java.time.LocalDateTime;
 import lombok.RequiredArgsConstructor;
@@ -33,6 +34,16 @@ public class AuthService {
   // 1. 로컬 회원가입
   @Transactional
   public void signup(SignupRequest request) {
+    // 이메일 중복 검사
+    if (userRepository.existsByEmail(request.getEmail())) {
+      throw new BusinessException(AuthErrorCode.EMAIL_DUPLICATION);
+    }
+
+    // 닉네임 중복 검사
+    if (userRepository.existsByNickname(request.getNickname())) {
+      throw new BusinessException(UserErrorCode.NICKNAME_DUPLICATION);
+    }
+
     if (userRepository.existsByEmail(request.getEmail())) {
       throw new BusinessException(AuthErrorCode.EMAIL_DUPLICATION);
     }

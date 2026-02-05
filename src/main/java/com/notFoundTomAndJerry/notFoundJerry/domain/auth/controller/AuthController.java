@@ -7,6 +7,7 @@ import com.notFoundTomAndJerry.notFoundJerry.domain.auth.dto.response.TokenRespo
 import com.notFoundTomAndJerry.notFoundJerry.domain.auth.service.AuthService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
+import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.PostMapping;
@@ -24,7 +25,7 @@ public class AuthController {
 
   @Operation(summary = "로컬 회원가입")
   @PostMapping("/signup")
-  public ResponseEntity<String> signup(@RequestBody SignupRequest request) {
+  public ResponseEntity<String> signup(@RequestBody @Valid SignupRequest request) {
     authService.signup(request);
     return ResponseEntity.ok("회원가입이 완료되었습니다.");
   }

@@ -8,10 +8,12 @@ import lombok.Getter;
 
 import java.time.LocalDateTime;
 import java.util.List;
+import lombok.NoArgsConstructor;
 
 @Getter
 @Builder
 @AllArgsConstructor
+@NoArgsConstructor
 public class RoomDetailResponse {
     private Long roomId;
     private Long hostId;

@@ -1,5 +1,6 @@
 package com.notFoundTomAndJerry.notFoundJerry.domain.room.repository;
 
+import com.notFoundTomAndJerry.notFoundJerry.domain.room.dto.response.LocationWithRoomCountResponse;
 import com.notFoundTomAndJerry.notFoundJerry.domain.room.entity.Room;
 import com.notFoundTomAndJerry.notFoundJerry.domain.room.entity.enums.RoomStatus;
 import org.springframework.data.domain.Page;
@@ -43,4 +44,22 @@ public interface RoomRepository extends JpaRepository<Room, Long> {
             "AND r.status IN ('WAITING', 'RUNNING')")
     // 보통 완료/삭제된 방은 제외하고 보여줌
     List<Room> findParticipatedRooms(@Param("userId") Long userId);
+
+    /**
+     * 지도 마커용: 특정 영역 내 장소별 방 개수 집계 - Location 엔티티에 추가한 latitude, longitude, address 필드를 사용
+     */
+    @Query(
+        "SELECT new com.notFoundTomAndJerry.notFoundJerry.domain.room.dto.response.LocationWithRoomCountResponse("
+            + "l.id, l.parkNm, l.latitude, l.longitude, l.address, "
+            + "CAST(SUM(CASE WHEN r.status = 'WAITING' THEN 1 ELSE 0 END) AS long), "
+            + "CAST(SUM(CASE WHEN r.status = 'RUNNING' THEN 1 ELSE 0 END) AS long)) "
+            + "FROM Location l "
+            + "LEFT JOIN Room r ON l.id = r.locationId "
+            + "WHERE l.latitude BETWEEN :minLat AND :maxLat "
+            + "AND l.longitude BETWEEN :minLng AND :maxLng "
+            + "GROUP BY l.id, l.parkNm, l.latitude, l.longitude, l.address")
+    List<LocationWithRoomCountResponse> findAllWithRoomStatusCount(
+        @Param("minLat") Double minLat, @Param("maxLat") Double maxLat,
+        @Param("minLng") Double minLng, @Param("maxLng") Double maxLng
+    );
 }

@@ -17,7 +17,9 @@ import java.util.Collections;
 import java.util.List;
 
 @Entity
-@Table(name = "rooms")
+@Table(name = "rooms", indexes = {
+    @Index(name = "idx_room_location_status", columnList = "location_id, status")
+})
 @EntityListeners(AuditingEntityListener.class)
 @Getter
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
@@ -81,15 +83,15 @@ public class Room {
     // 정적 팩토리 메서드
     @Builder(builderMethodName = "createBuilder")
     public static Room create(
-            Long hostId,
-            Long locationId,
-            String title,
-            Integer maxPlayers,
-            Integer policeCount,
-            Integer thiefCount,
-            LocalDateTime startTime,
-            Integer playTime,
-            RoleAssignMode roleAssignMode
+        Long hostId,
+        Long locationId,
+        String title,
+        Integer maxPlayers,
+        Integer policeCount,
+        Integer thiefCount,
+        LocalDateTime startTime,
+        Integer playTime,
+        RoleAssignMode roleAssignMode
     ) {
         validateCreateParams(startTime, maxPlayers, policeCount, thiefCount);
 
@@ -102,7 +104,6 @@ public class Room {
         room.thiefCount = thiefCount;
         room.startTime = startTime;
         room.playTime = playTime;
-
 
         // 기본값 설정
         room.roleAssignMode = (roleAssignMode == null) ? RoleAssignMode.RANDOM : roleAssignMode;
@@ -205,6 +206,13 @@ public class Room {
             throw new BusinessException(RoomErrorCode.INVALID_ROOM_STATUS);
         }
         this.status = RoomStatus.FINISHED;
+    }
+
+    public void transitionToWatting() {
+        if (this.status != RoomStatus.FINISHED) {
+            throw new BusinessException(RoomErrorCode.INVALID_ROOM_STATUS);
+        }
+        this.status = RoomStatus.WAITING;
     }
 
 

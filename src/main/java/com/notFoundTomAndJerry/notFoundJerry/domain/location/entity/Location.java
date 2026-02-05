@@ -31,6 +31,12 @@ public class Location {
   @Column(columnDefinition = "POINT SRID 4326", nullable = false)
   private Point point; // 위경도 공간 데이터
 
+  @Column(nullable = false)
+  private Double latitude;
+
+  @Column(nullable = false)
+  private Double longitude;
+
   @Column(nullable = true)
   private String address; // 전체 주소
 
@@ -59,6 +65,11 @@ public class Location {
   // 공공데이터 API로부터 받은 공원 정보 업데이트
   public void updateFromPublicApi(String manageNo, String parkNm, String parkSe, String parkAr,
       String lat, String lon) {
+
+    // 위경도 숫자 변환
+    this.latitude = Double.parseDouble(lat);
+    this.longitude = Double.parseDouble(lon);
+
     // 위경도 -> Point 변환
     GeometryFactory geometryFactory = new GeometryFactory(new PrecisionModel(), 4326);
     double longitude = Double.parseDouble(lon);

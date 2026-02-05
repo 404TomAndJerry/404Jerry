@@ -2,6 +2,7 @@ package com.notFoundTomAndJerry.notFoundJerry.domain.stat.facade;
 
 import com.notFoundTomAndJerry.notFoundJerry.domain.game.entity.enums.PlayerRole; // 상대방 Enum 사용
 import com.notFoundTomAndJerry.notFoundJerry.domain.stat.entity.UserHistory;
+import com.notFoundTomAndJerry.notFoundJerry.domain.stat.entity.enums.AgeGroup;
 import com.notFoundTomAndJerry.notFoundJerry.domain.stat.service.RedisStatService;
 import com.notFoundTomAndJerry.notFoundJerry.domain.stat.service.UserHistoryService;
 import lombok.RequiredArgsConstructor;
@@ -26,7 +27,7 @@ public class GameStatFacade {
    * @param regionName  게임 맵(지역) 이름 (통계용)
    * @param age         유저 나이 (통계용)
    */
-  public void processGameStat(Long userId, PlayerRole role, boolean isWinner, boolean isRunaway, String regionName, int age) {
+  public void processGameStat(Long userId, PlayerRole role, boolean isWinner, boolean isRunaway, String regionName, Integer age) {
     try {
       // 2. RDB 업데이트 (UserHistory - 집계 데이터)
       UserHistory updatedHistory = userHistoryService.saveGameResult(

@@ -16,6 +16,7 @@ import com.notFoundTomAndJerry.notFoundJerry.domain.user.repository.UserReposito
 import com.notFoundTomAndJerry.notFoundJerry.global.exception.BusinessException;
 import com.notFoundTomAndJerry.notFoundJerry.global.exception.domain.GameErrorCode;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -28,6 +29,8 @@ import java.util.stream.Collectors;
  * - 투표 처리 및 집계
  * - MVP 확정
  */
+
+@Slf4j
 @Service
 @RequiredArgsConstructor
 @Transactional(readOnly = true)
@@ -41,129 +44,149 @@ public class MvpVoteService {
     private final GameConverter gameConverter;
     private final UserRepository userRepository;
 
-    /**
-     * MVP 투표 (한 게임당 참가자 1인 1회, 스킵 포함).
-     * - 투표자는 해당 게임의 플레이어여야 함.
-     * - 이미 투표한 경우 DUPLICATE_VOTE.
-     * - 스킵 시 targetUserId 없이 1회 투표로 간주.
-     */
     @Transactional
     public MvpVoteResponse voteMvp(Long gameId, Long voterId, MvpVoteRequest request) {
+        log.info("[투표 진행] gameId: {}, voterId: {}, skip: {}", gameId, voterId, request.getSkip());
+
         // 해당 게임 참가자만 투표 가능
         if (gamePlayerRepository.findByGameIdAndUserId(gameId, voterId).isEmpty()) {
+            log.warn("[투표 실패] 참가자가 아님 - gameId: {}, voterId: {}", gameId, voterId);
             throw new BusinessException(GameErrorCode.VOTER_NOT_IN_GAME);
         }
-        // 이미 투표했는지 확인 (한 게임당 1회만)
+        // 이미 투표했는지 확인
         if (mvpVoteRepository.existsByGameIdAndVoterId(gameId, voterId)) {
-            throw new BusinessException(GameErrorCode.DUPLICATE_VOTE, "게임 " + gameId + "에서 투표자 " + voterId + "가 이미 투표했습니다.");
+            log.warn("[투표 실패] 중복 투표 - gameId: {}, voterId: {}", gameId, voterId);
+            throw new BusinessException(GameErrorCode.DUPLICATE_VOTE);
         }
 
-        // 스킵 처리 (스킵도 1회 투표로 인정)
+        // 스킵 처리
         if (Boolean.TRUE.equals(request.getSkip())) {
             MvpVote mvpVote = MvpVote.builder()
-                    .gameId(gameId)
-                    .voterId(voterId)
-                    .targetUserId(null)
-                    .build();
+                .gameId(gameId)
+                .voterId(voterId)
+                .targetUserId(null)
+                .build();
             mvpVoteRepository.save(mvpVote);
-            tryTransitionRoomToWaitingIfAllVoted(gameId);
+            log.info("[투표 완료] 스킵 처리됨 - voterId: {}", voterId);
 
+            tryTransitionRoomToWaitingIfAllVoted(gameId);
             return gameConverter.toVoteResponse(false, true);
         }
 
         // 일반 투표 처리
         Long targetUserId = request.getTargetUserId();
+        log.info("[투표 진행] targetUserId: {}", targetUserId);
+
         if (targetUserId == null) {
             throw new BusinessException(GameErrorCode.VOTE_TARGET_REQUIRED);
         }
         if (targetUserId.equals(voterId)) {
-            throw new BusinessException(GameErrorCode.SELF_VOTE_NOT_ALLOWED, "투표자 " + voterId + "는 자기 자신에게 투표할 수 없습니다.");
+            log.warn("[투표 실패] 본인 투표 불가 - voterId: {}", voterId);
+            throw new BusinessException(GameErrorCode.SELF_VOTE_NOT_ALLOWED);
         }
-        // 투표 대상은 같은 게임 참가자여야 함
         if (gamePlayerRepository.findByGameIdAndUserId(gameId, targetUserId).isEmpty()) {
-            throw new BusinessException(GameErrorCode.VOTER_NOT_IN_GAME, "투표 대상은 해당 게임 참가자여야 합니다.");
+            log.warn("[투표 실패] 대상이 참가자가 아님 - targetUserId: {}", targetUserId);
+            throw new BusinessException(GameErrorCode.VOTER_NOT_IN_GAME);
         }
 
         MvpVote mvpVote = MvpVote.builder()
-                .gameId(gameId)
-                .voterId(voterId)
-                .targetUserId(targetUserId)
-                .build();
+            .gameId(gameId)
+            .voterId(voterId)
+            .targetUserId(targetUserId)
+            .build();
         mvpVoteRepository.save(mvpVote);
-        tryTransitionRoomToWaitingIfAllVoted(gameId);
+        log.info("[투표 완료] 투표 저장됨 - voterId: {} -> targetId: {}", voterId, targetUserId);
 
+        tryTransitionRoomToWaitingIfAllVoted(gameId);
         return gameConverter.toVoteResponse(true, false);
     }
 
-    // 해당 게임의 모든 플레이어가 MVP 투표를 완료했으면 Room 상태를 WAITING으로 전환하고 MVP 확정.
     private void tryTransitionRoomToWaitingIfAllVoted(Long gameId) {
         long voteCount = mvpVoteRepository.countByGameId(gameId);
         long playerCount = gamePlayerRepository.countByGameId(gameId);
+        log.info("[투표 현황 확인] gameId: {}, 투표수: {}, 전체 인원: {}", gameId, voteCount, playerCount);
+
         if (voteCount != playerCount) {
             return;
         }
-        // MVP 확정
+
+        log.info("[상태 전환 시작] 모든 인원 투표 완료. MVP 확정 및 방 상태 변경 진행.");
         finalizeMvp(gameId);
-        // Room → WAITING (다음 게임 대기)
+
         Game game = gameRepository.findById(gameId)
-                .orElseThrow(() -> new BusinessException(GameErrorCode.GAME_NOT_FOUND, "게임을 찾을 수 없습니다: " + gameId));
-        Room room = roomRepository.findById(game.getRoomId())
-                .orElse(null);
+            .orElseThrow(() -> new BusinessException(GameErrorCode.GAME_NOT_FOUND));
+
+        Room room = roomRepository.findById(game.getRoomId()).orElse(null);
         if (room != null) {
             room.transitionToWaiting();
             roomRepository.save(room);
+            log.info("[상태 전환 완료] RoomId: {} -> WAITING", room.getId());
         }
     }
 
-    // 투표 여부 확인, gameId 게임 ID, voterId 투표자 ID
     public boolean hasVoted(Long gameId, Long voterId) {
-        return mvpVoteRepository.existsByGameIdAndVoterId(gameId, voterId);
+        boolean voted = mvpVoteRepository.existsByGameIdAndVoterId(gameId, voterId);
+        log.info("[투표 여부 조회] gameId: {}, voterId: {}, 결과: {}", gameId, voterId, voted);
+        return voted;
     }
 
-    // MVP 사용자 ID 조회 (동률 처리), gameId 게임 ID
     public List<Long> getMvpUserIds(Long gameId) {
         List<Object[]> voteCounts = mvpVoteRepository.findVoteCountsByGameId(gameId);
+        log.info("[MVP 집계 조회] gameId: {}, 집계 데이터 존재 여부: {}", gameId, !voteCounts.isEmpty());
 
         if (voteCounts.isEmpty()) {
             return List.of();
         }
 
-        // 최대 투표 수
         Long maxVotes = (Long) voteCounts.get(0)[1];
+        log.info("[MVP 집계] 최대 득표수: {}", maxVotes);
 
-        // 최대 투표 수를 받은 모든 사용자 반환 (동률 포함)
-        return voteCounts.stream()
-                .filter(arr -> arr[1].equals(maxVotes))
-                .map(arr -> (Long) arr[0])
-                .collect(Collectors.toList());
+        List<Long> mvpUserIds = voteCounts.stream()
+            .filter(arr -> arr[1].equals(maxVotes))
+            .map(arr -> (Long) arr[0])
+            .collect(Collectors.toList());
+
+        log.info("[MVP 집계 완료] MVP 선정 유저 IDs: {}", mvpUserIds);
+        return mvpUserIds;
     }
 
-    // MVP 확정 (GamePlayer에 반영), gameId 게임 ID
     @Transactional
     public void finalizeMvp(Long gameId) {
-        // 기존 MVP 전부 해제 후 새로 확정
+        log.info("[MVP 확정 프로세스] 시작 - gameId: {}", gameId);
         gamePlayerService.unsetAllMvp(gameId);
 
         List<Long> mvpUserIds = getMvpUserIds(gameId);
 
         if (mvpUserIds.isEmpty()) {
-            // MVP가 없는 경우 (모두 스킵하거나 투표가 없음)
+            log.info("[MVP 확정 프로세스] 종료 - MVP 유저 없음 (모두 스킵 등)");
             return;
         }
 
-        // GamePlayerService를 통해 MVP 설정
         gamePlayerService.setMvp(gameId, mvpUserIds);
+        log.info("[MVP 확정 프로세스] 완료 - 대상 IDs: {}", mvpUserIds);
     }
 
-    // MVP 결과 조회 (등록 발생 시 투표 MVP 여부, 투표가 없을 경우 MVP 없음), gameId 게임 ID
     public MvpResultResponse getMvpResult(Long gameId) {
+        log.info("[MVP 결과 조회 시작] gameId: {}", gameId);
+
+        // 새로 추가한 부분. [추가 로그] 현재 이 게임의 모든 플레이어와 그들의 MVP 여부를 생으로 찍어봄
+        List<GamePlayer> allPlayers = gamePlayerRepository.findByGameId(gameId);
+        allPlayers.forEach(p -> log.info("[데이터체크] userId: {}, isMvp: {}", p.getUserId(), p.getIsMvp()));
+
         List<GamePlayer> mvpPlayers = gamePlayerService.getMvpPlayers(gameId);
+        log.info("[MVP 결과 조회 - 1] GamePlayer 목록: {}, size: {}", mvpPlayers, (mvpPlayers != null ? mvpPlayers.size() : 0));
 
         List<Long> userIds = mvpPlayers.stream()
-                .map(GamePlayer::getUserId)
-                .collect(Collectors.toList());
-        Map<Long, String> nicknameMap = userRepository.findNicknameMap(userIds);
+            .map(GamePlayer::getUserId)
+            .collect(Collectors.toList());
+        log.info("[MVP 결과 조회 - 2] 추출된 userIds: {}", userIds);
 
-        return gameConverter.toMvpResultResponse(mvpPlayers, nicknameMap);
+        Map<Long, String> nicknameMap = userRepository.findNicknameMap(userIds);
+        log.info("[MVP 결과 조회 - 3] 조회된 nicknameMap: {}", nicknameMap);
+
+        MvpResultResponse response = gameConverter.toMvpResultResponse(mvpPlayers, nicknameMap);
+        log.info("[MVP 결과 조회 완료] response 생성됨");
+
+        return response;
     }
 }

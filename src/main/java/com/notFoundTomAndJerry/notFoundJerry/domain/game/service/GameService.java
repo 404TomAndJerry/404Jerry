@@ -31,6 +31,7 @@ import com.notFoundTomAndJerry.notFoundJerry.global.exception.domain.StatErrorCo
 import com.notFoundTomAndJerry.notFoundJerry.global.exception.domain.UserErrorCode;
 import java.util.List;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -42,6 +43,7 @@ import org.springframework.transaction.annotation.Transactional;
  *  TODO : @Room Repository 참조하는 것
  *  - 추후 Service를 참조하는 것으로 변경
  */
+@Slf4j
 @Service
 @RequiredArgsConstructor
 @Transactional(readOnly = true)
@@ -60,126 +62,104 @@ public class GameService {
   private final ChatService chatService; // ChatService 주입
 
   // 새로운 게임 생성, roomId 방 ID, 생성된 게임
+
   @Transactional
   public Game createGame(Long roomId) {
-    // 이미 진행 중인 게임이 있는지 확인
+    log.info("[게임 생성 시도] roomId: {}", roomId);
     if (isGameRunning(roomId)) {
-      Game running = gameRepository.findByRoomIdAndStatus(roomId, GameStatus.RUNNING)
-          .orElseThrow();
-      throw new BusinessException(GameErrorCode.GAME_ALREADY_RUNNING,
-          "방 " + roomId + "에 이미 진행 중인 게임이 있습니다. (게임 ID: " + running.getId() + ")");
+      log.warn("[게임 생성 실패] 이미 진행 중인 게임이 존재함 - roomId: {}", roomId);
+      Game running = gameRepository.findByRoomIdAndStatus(roomId, GameStatus.RUNNING).orElseThrow();
+      throw new BusinessException(GameErrorCode.GAME_ALREADY_RUNNING);
     }
-    Game game = Game.builder()
-        .roomId(roomId)
-        .build();
-    return gameRepository.save(game);
+    Game game = Game.builder().roomId(roomId).build();
+    Game savedGame = gameRepository.save(game);
+    log.info("[게임 생성 완료] gameId: {}, roomId: {}", savedGame.getId(), roomId);
+    return savedGame;
   }
-
-  // 게임 시작 (통합), request 게임 시작 요청
   @Transactional
   public GameStartResponse startGame(GameStartRequest request) {
     Long roomId = request.getRoomId();
+    log.info("[게임 시작 프로세스] 시작 - roomId: {}, 배정방식: {}", roomId, request.getRoleAssignment());
 
-    // Room 정보 먼저 조회 (없으면 게임 생성하지 않음 → orphan 방지)
     Room room = roomRepository.findByIdWithParticipants(roomId)
         .orElseThrow(() -> new BusinessException(RoomErrorCode.ROOM_NOT_FOUND));
 
     Game game = createGame(roomId);
 
-    // Room 상태를 RUNNING으로 변경
+    // Room 상태 변경 로그
+    log.info("[방 상태 전환] WAITING -> RUNNING - roomId: {}", roomId);
     room.transitionToRunning();
     roomRepository.save(room);
 
-    // 역할 배치
-    RoleAssignType roleAssignment = request.getRoleAssignment();
-    if (roleAssignment == RoleAssignType.RANDOM) {
-      // Room의 참가자 목록에서 userId 추출
-      List<Long> userIds = room.getParticipants().stream()
-          .map(RoomParticipant::getUserId)
-          .toList();
-
+    // 역할 배정 로그
+    if (request.getRoleAssignment() == RoleAssignType.RANDOM) {
+      List<Long> userIds = room.getParticipants().stream().map(RoomParticipant::getUserId).toList();
+      log.info("[역할 배정] 랜덤 배정 시작 - 대상 인원: {}명", userIds.size());
       gamePlayerService.assignRolesRandomly(game.getId(), userIds);
-    } else if (roleAssignment == RoleAssignType.MANUAL) {
-      // Room의 참가자 역할 정보를 Game에 복사
+    } else {
+      log.info("[역할 배정] 수동(Room 설정 복사) 배정 시작");
       gamePlayerService.assignRolesFromRoom(game.getId(), room.getParticipants());
     }
 
-    // 게임 시작
     game.start();
-
-    // 경찰/도둑 인원 수 조회
     long policeCount = gamePlayerRepository.countByGameIdAndRole(game.getId(), PlayerRole.POLICE);
     long thiefCount = gamePlayerRepository.countByGameIdAndRole(game.getId(), PlayerRole.THIEF);
 
-    // Response 생성 (Converter 사용)
+    log.info("[게임 시작 완료] gameId: {}, 경찰: {}, 도둑: {}", game.getId(), policeCount, thiefCount);
     return gameConverter.toStartResponse(game, (int) policeCount, (int) thiefCount);
   }
 
-  // 게임 종료, gameId 게임 ID, request 게임 종료 정보 (종료 사유)
   @Transactional
   public GameEndResponse finishGame(Long gameId, GameEndRequest request) {
-    // 게임 정보 조회
+    log.info("[게임 종료 프로세스] 시작 - gameId: {}, 사유: {}", gameId, request.getEndReason());
+
     Game game = gameRepository.findById(gameId)
-        .orElseThrow(() -> new BusinessException(GameErrorCode.GAME_NOT_FOUND, "게임을 찾을 수 없습니다: " + gameId));
+        .orElseThrow(() -> new BusinessException(GameErrorCode.GAME_NOT_FOUND));
 
-    // Room 정보 조회
     Room room = roomRepository.findByIdWithParticipants(game.getRoomId())
-        .orElseThrow(() -> new BusinessException(RoomErrorCode.ROOM_NOT_FOUND, "방 " + game.getRoomId() + "을 찾을 수 없습니다."));
+        .orElseThrow(() -> new BusinessException(RoomErrorCode.ROOM_NOT_FOUND));
 
-    // LocationRepository를 통해 Room의 locationId에 해당하는 regionName 추출
     Location location = locationRepository.findById(room.getLocationId())
-        .orElseThrow(() -> new BusinessException(StatErrorCode.LOCATION_NOT_FOUND, "위치 정보를 찾을 수 없습니다."));
+        .orElseThrow(() -> new BusinessException(StatErrorCode.LOCATION_NOT_FOUND));
+
     String regionName = location.getRegionName();
+    PlayerRole winnerTeam = request.getEndReason().getWinner();
 
-    // 종료 사유에 따라 승리 팀 자동 결정
-    EndReason endReason = request.getEndReason();
-    PlayerRole winnerTeam = endReason.getWinner();
+    log.info("[게임 상태 변경] RUNNING -> FINISHED - gameId: {}, 승리팀: {}", gameId, winnerTeam);
+    game.finish(request.getEndReason().getDescription());
+    gameRepository.save(game);
 
-    // 게임 상태를 FINISHED로 변경 및 종료 사유 저장
-    game.finish(endReason.getDescription());
-
-    // Room 상태를 FINISHED로 변경 (MVP 투표가 모두 끝나면 MvpVoteService에서 WAITING으로 전환)
+    log.info("[방 상태 변경] RUNNING -> FINISHED - roomId: {}", room.getId());
     room.transitionToFinished();
     roomRepository.save(room);
 
-    // 게임 결과를 DB에 저장
-    gameResultService.saveGameResults(
-        gameId,
-        winnerTeam,
-        endReason.getDescription()
-    );
+    // 결과 저장 로그
+    gameResultService.saveGameResults(gameId, winnerTeam, request.getEndReason().getDescription());
+    log.info("[결과 저장 완료] gameId: {}", gameId);
 
-    // 게임에 참여한 플레이어 목록을 가져와서 한 명씩 통계 업데이트
+    // 통계 업데이트 로그
     List<GamePlayer> players = gamePlayerRepository.findByGameId(gameId);
+    log.info("[통계 업데이트] 시작 - 대상 플레이어 수: {}명", players.size());
     for (GamePlayer player : players) {
-      // 유저의 나이 정보를 가져오기 위해 조회
-      User user = userRepository.findById(player.getUserId())
-          .orElseThrow(() -> new BusinessException(UserErrorCode.USER_NOT_FOUND, "사용자를 찾을 수 없습니다: " + player.getUserId()));
-
-      // 탈주 여부 확인
+      User user = userRepository.findById(player.getUserId()).orElseThrow();
       boolean isRunaway = runawayLogRepository.existsByGameIdAndUserId(gameId, player.getUserId());
 
       gameStatFacade.processGameStat(
-          player.getUserId(),
-          player.getRole(),
-          player.getRole() == winnerTeam, // 승리 여부 계산
-          isRunaway,                          // 탈주 여부 (필요 시 로직 추가)
-          regionName,                       // 지역 정보 (room에서 가져오거나 기본값)
-          user.getAge()
+          player.getUserId(), player.getRole(), player.getRole() == winnerTeam,
+          isRunaway, regionName, user.getAge()
       );
     }
-
-    // 게임이 끝났으면, 채팅 내역을 초기화 한다.
+    log.info("[통계 업데이트] 완료");
+    // 채팅 초기화 로그
+    log.info("[채팅 초기화] roomId: {}", game.getRoomId());
     chatService.resetChatRoom(game.getRoomId());
 
-    // Response 생성 (Converter 사용)
     return gameConverter.toEndResponse(game);
   }
 
-  // 게임 상태 조회, gameId 게임 ID, 게임 상태 정보
   public GameStatusResponse getGameStatus(Long gameId) {
-    Game game = gameRepository.findById(gameId)
-        .orElseThrow(() -> new BusinessException(GameErrorCode.GAME_NOT_FOUND, "게임을 찾을 수 없습니다: " + gameId));
+    log.info("[게임 상태 조회] gameId: {}", gameId);
+    Game game = gameRepository.findById(gameId).orElseThrow();
     return gameConverter.toStatusResponse(game);
   }
 

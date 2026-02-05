@@ -46,9 +46,6 @@ public class UserHistory {
   @Column(nullable = false)
   private Integer thiefWins = 0;  // 도둑으로 이긴 횟수 추가
 
-  @Version // 낙관적 락
-  private Long version;
-
   @Builder
   public UserHistory(User user) {
     this.user = user;

@@ -25,9 +25,9 @@ public class RedisSubscriber {
       ChatMessageDto chatMessage = objectMapper.readValue(publishMessage, ChatMessageDto.class);
 
       // 2. 실제 구독자(클라이언트)에게 웹소켓으로 발송
-      // Destination: /sub/chat/room/{roomId}
+      // Destination: /sub/chat/rooms/{roomId}
       messagingTemplate.convertAndSend(
-          "/sub/chat/room/" + chatMessage.getId(),
+          "/sub/chat/room/" + chatMessage.getRoomId(),
           chatMessage
       );
 

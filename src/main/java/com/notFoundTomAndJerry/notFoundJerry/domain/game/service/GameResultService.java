@@ -80,19 +80,4 @@ public class GameResultService {
         return gameConverter.toGameResultResponse(game, gameResults, gamePlayers, mvpPlayers);
     }
 
-    /* TODO: 사용자 통계 기능
-    // 사용자 통계 조회, userId 사용자 ID
-    public UserStatsDto getUserStats(Long userId) {
-        long totalGames = gameResultRepository.countByUserId(userId);
-        long winCount = gameResultRepository.countByUserIdAndIsWinnerTrue(userId);
-        double winRate = totalGames > 0 ? (double) winCount / totalGames * 100 : 0.0;
-        
-        return UserStatsDto.builder()
-            .userId(userId)
-            .totalGames(totalGames)
-            .winCount(winCount)
-            .winRate(winRate)
-            .build();
-    }
-    */
 }

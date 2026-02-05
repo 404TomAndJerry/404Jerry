@@ -1,0 +1,234 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>404Jerry API Tester - v1.3</title>
+  <script src="https://cdn.jsdelivr.net/npm/axios/dist/axios.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/sockjs-client/1.5.1/sockjs.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/stomp.js/2.3.3/stomp.min.js"></script>
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+  <style>
+    body { background: #f8f9fa; font-size: 0.85rem; }
+    .log-panel { background: #212529; color: #00ff00; height: 350px; overflow-y: auto; padding: 15px; font-family: 'Courier New', monospace; border-radius: 8px; }
+    .card { border: none; margin-bottom: 20px; }
+    #chat-board { height: 300px; overflow-y: auto; background: #ffffff; border: 1px solid #dee2e6; border-radius: 8px; }
+    .chat-item { margin-bottom: 10px; }
+    .badge-user { font-size: 0.7rem; margin-right: 5px; }
+  </style>
+</head>
+<body>
+
+<div class="container-fluid py-4">
+  <header class="mb-4 d-flex justify-content-between align-items-center bg-white p-3 shadow-sm rounded border-start border-primary border-4">
+    <h2 class="h4 mb-0 text-primary">🚀 404Jerry Debugger <small class="text-muted" style="font-size: 0.7rem;">JWT & WebSocket</small></h2>
+    <div>
+      <span id="user-display" class="badge bg-dark me-2">Guest</span>
+      <button id="ws-connect-btn" class="btn btn-sm btn-outline-danger" onclick="connect()">Connect WebSocket</button>
+      <span id="token-status" class="badge bg-danger ms-2">No Token</span>
+    </div>
+  </header>
+
+  <div class="row">
+    <div class="col-lg-7">
+      <div class="card shadow-sm">
+        <div class="card-header bg-primary text-white fw-bold">1. Authentication</div>
+        <div class="card-body row g-2">
+          <div class="col-8">
+            <input type="text" id="login-email" class="form-control form-control-sm mb-1" placeholder="Email">
+            <input type="password" id="login-pw" class="form-control form-control-sm" placeholder="Password">
+          </div>
+          <div class="col-4 d-grid gap-1">
+            <button onclick="login()" class="btn btn-sm btn-primary">Login</button>
+            <button class="btn btn-sm btn-light text-danger" onclick="logout()">Reset</button>
+          </div>
+        </div>
+      </div>
+
+      <div class="card shadow-sm">
+        <div class="card-header bg-dark text-white fw-bold">2. Room Control</div>
+        <div class="card-body">
+          <div class="input-group input-group-sm mb-2">
+            <span class="input-group-text bg-light fw-bold">Room ID</span>
+            <input type="text" id="target-id" class="form-control" value="1" placeholder="ID">
+          </div>
+          <button onclick="apiAction('GET', `/api/games/by-room/${$('#target-id').value}`)" class="btn btn-sm btn-outline-dark w-100">Check Game Status</button>
+        </div>
+      </div>
+
+      <div class="card shadow-sm">
+        <div class="card-header bg-info text-white fw-bold d-flex justify-content-between align-items-center">
+          3. Live Chat
+          <button onclick="fetchChatHistory()" class="btn btn-xs btn-light py-0" style="font-size: 0.7rem;">History</button>
+        </div>
+        <div class="card-body">
+          <div id="chat-board" class="p-3 mb-3 border shadow-inner"></div>
+          <div class="input-group">
+            <input type="text" id="chat-input" class="form-control" placeholder="메시지 입력..." onkeypress="if(event.keyCode==13) processChat()">
+            <button onclick="processChat()" class="btn btn-primary px-4">보내기</button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="col-lg-5">
+      <div class="card shadow-sm">
+        <div class="card-header bg-dark text-white d-flex justify-content-between align-items-center fw-bold">
+          Console Logs
+          <button class="btn btn-xs btn-outline-light py-0" style="font-size: 0.7rem;" onclick="$('#log').innerHTML=''">Clear</button>
+        </div>
+        <div id="log" class="log-panel small"></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+  const $ = (q) => document.querySelector(q);
+  const API_BASE = 'http://localhost:8080';
+  let stompClient = null;
+  let myUserInfo = null; // 로그인한 유저 정보를 저장
+
+  // --- 1. 로그인 로직 (유저 정보 자동 갱신 포함) ---
+  async function login() {
+    const data = { email: $('#login-email').value, password: $('#login-pw').value };
+    try {
+      const res = await apiAction('POST', '/api/auth/login', data);
+      if(res.accessToken) {
+        localStorage.setItem('accessToken', res.accessToken);
+        await getMyInfo(); // 로그인 성공 즉시 내 정보 가져오기
+      }
+    } catch(e) {}
+  }
+
+  async function getMyInfo() {
+    try {
+      const user = await apiAction('GET', '/api/users/me');
+      myUserInfo = user; // 전역 변수에 저장 (ID 활용)
+      $('#user-display').innerText = `${user.nickname || 'User'} (ID: ${user.id})`;
+      $('#user-display').className = 'badge bg-success me-2';
+      updateAuthStatus(true);
+    } catch(e) {
+      updateAuthStatus(false);
+    }
+  }
+
+  function logout() {
+    localStorage.clear();
+    location.reload();
+  }
+
+  // --- 2. HTTP API (JWT 헤더 포함) ---
+  async function apiAction(method, url, data = null) {
+    const token = localStorage.getItem('accessToken');
+    const config = {
+      method: method,
+      url: API_BASE + url,
+      headers: token ? { 'Authorization': `Bearer ${token}` } : {},
+      data: data
+    };
+    addLog(`>> [REQ] ${method} ${url}`);
+    try {
+      const res = await axios(config);
+      addLog(`<< [RES] ${JSON.stringify(res.data, null, 2)}`);
+      return res.data;
+    } catch (err) {
+      addLog(`!! [ERR] ${err.response?.status || 'Network Error'}`);
+      throw err;
+    }
+  }
+
+  // --- 3. WebSocket/STOMP (JWT 검증 포함) ---
+  function connect() {
+    const token = localStorage.getItem('accessToken');
+    if(!token) return alert("로그인을 먼저 해주세요 (JWT 필요)");
+
+    const socket = new SockJS(`${API_BASE}/ws-stomp`);
+    stompClient = Stomp.over(socket);
+
+    // STOMP 연결 헤더에 JWT 토큰 추가
+    const headers = { 'Authorization': `Bearer ${token}` };
+
+    stompClient.connect(headers, function (frame) {
+      addLog('>> [WS] 연결 성공 (JWT 인증 완료)');
+      $('#ws-connect-btn').innerText = 'Connected';
+      $('#ws-connect-btn').className = 'btn btn-sm btn-success';
+
+      const roomId = $('#target-id').value || '1';
+      stompClient.subscribe(`/sub/chat/room/${roomId}`, function (response) {
+        const msg = JSON.parse(response.body);
+        // 내 ID와 보낸 사람 ID 비교하여 방향 결정
+        const isMe = myUserInfo && (msg.senderId === myUserInfo.id);
+        appendToChatBoard(msg.senderId, msg.message, isMe);
+        addLog(`<< [RECV] From ${msg.senderId}: ${msg.message}`);
+      });
+    }, function (err) {
+      addLog('!! [WS ERROR] ' + err);
+    });
+  }
+
+  // --- 4. 실시간 채팅 전송 (자동 ID 연동) ---
+  function processChat() {
+    const input = $('#chat-input');
+    const message = input.value;
+    const roomId = parseInt($('#target-id').value) || 1;
+
+    if(!myUserInfo) return alert("유저 정보를 먼저 불러와야 합니다.");
+    if(!message) return;
+
+    if (stompClient && stompClient.connected) {
+      const chatMessage = {
+        roomId: roomId,
+        senderId: myUserInfo.id, // 로그인한 유저의 진짜 ID 사용
+        message: message
+      };
+
+      stompClient.send("/pub/chat/message", {}, JSON.stringify(chatMessage));
+      input.value = '';
+    } else {
+      alert("WebSocket 연결이 필요합니다!");
+    }
+  }
+
+  function appendToChatBoard(sender, message, isMe) {
+    const board = $('#chat-board');
+    if (board.innerHTML.includes('WebSocket을 연결')) board.innerHTML = '';
+
+    const msgHtml = `
+            <div class="chat-item d-flex flex-column ${isMe ? 'align-items-end' : 'align-items-start'}">
+                <div><span class="badge ${isMe ? 'bg-primary' : 'bg-secondary'}">${isMe ? 'Me' : 'User '+sender}</span></div>
+                <div class="p-2 mt-1 rounded shadow-sm" style="background: ${isMe ? '#e3f2fd' : '#f1f1f1'}; max-width: 85%;">${message}</div>
+            </div>`;
+    board.innerHTML += msgHtml;
+    board.scrollTop = board.scrollHeight;
+  }
+
+  async function fetchChatHistory() {
+    const roomId = $('#target-id').value;
+    try {
+      const messages = await apiAction('GET', `/api/chat/rooms/${roomId}/messages`);
+      $('#chat-board').innerHTML = '';
+      messages.forEach(m => {
+        const isMe = myUserInfo && (m.senderId === myUserInfo.id);
+        appendToChatBoard(m.senderId, m.message, isMe);
+      });
+    } catch (e) {}
+  }
+
+  function updateAuthStatus(isAuth) {
+    const status = $('#token-status');
+    status.className = isAuth ? 'badge bg-success' : 'badge bg-danger';
+    status.innerText = isAuth ? 'Authenticated' : 'No Token';
+  }
+
+  function addLog(msg) {
+    const logDiv = $('#log');
+    logDiv.innerHTML += `<div>[${new Date().toLocaleTimeString()}] ${msg}</div><hr style="border-color:#444; margin: 5px 0;">`;
+    logDiv.scrollTop = logDiv.scrollHeight;
+  }
+
+  // 초기화: 토큰 있으면 정보 가져오기
+  if(localStorage.getItem('accessToken')) getMyInfo();
+</script>
+</body>
+</html>

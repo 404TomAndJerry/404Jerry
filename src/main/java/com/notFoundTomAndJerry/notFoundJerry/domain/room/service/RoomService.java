@@ -4,6 +4,7 @@ import com.notFoundTomAndJerry.notFoundJerry.domain.room.dto.request.CreateRoomR
 import com.notFoundTomAndJerry.notFoundJerry.domain.room.dto.request.RoomListRequest;
 import com.notFoundTomAndJerry.notFoundJerry.domain.room.dto.response.JoinRoomResponse;
 import com.notFoundTomAndJerry.notFoundJerry.domain.room.dto.response.RoomDetailResponse;
+import com.notFoundTomAndJerry.notFoundJerry.domain.room.dto.response.RoomListResponse;
 import com.notFoundTomAndJerry.notFoundJerry.domain.room.entity.enums.ParticipantRole;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
@@ -18,7 +19,7 @@ public interface RoomService {
     /**
      * 방 목록 조회 (필터 + 페이징)
      */
-    Page<RoomDetailResponse> listRooms(RoomListRequest request, Pageable pageable);
+    Page<RoomListResponse> listRooms(RoomListRequest request, Pageable pageable);
 
     /**
      * 방 단건 조회 (상세)

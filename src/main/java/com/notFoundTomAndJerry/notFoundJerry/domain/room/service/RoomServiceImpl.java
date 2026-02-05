@@ -6,6 +6,7 @@ import com.notFoundTomAndJerry.notFoundJerry.domain.room.dto.request.CreateRoomR
 import com.notFoundTomAndJerry.notFoundJerry.domain.room.dto.request.RoomListRequest;
 import com.notFoundTomAndJerry.notFoundJerry.domain.room.dto.response.JoinRoomResponse;
 import com.notFoundTomAndJerry.notFoundJerry.domain.room.dto.response.RoomDetailResponse;
+import com.notFoundTomAndJerry.notFoundJerry.domain.room.dto.response.RoomListResponse;
 import com.notFoundTomAndJerry.notFoundJerry.domain.room.entity.Room;
 import com.notFoundTomAndJerry.notFoundJerry.domain.room.entity.RoomParticipant;
 import com.notFoundTomAndJerry.notFoundJerry.domain.room.entity.enums.ParticipantRole;
@@ -15,8 +16,11 @@ import com.notFoundTomAndJerry.notFoundJerry.domain.user.repository.UserReposito
 import com.notFoundTomAndJerry.notFoundJerry.global.exception.BusinessException;
 import com.notFoundTomAndJerry.notFoundJerry.global.exception.domain.RoomErrorCode;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Sort;
+import org.springframework.data.web.PageableDefault;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -27,6 +31,7 @@ import java.util.stream.Collectors;
 @Service
 @RequiredArgsConstructor
 @Transactional(readOnly = true)
+@Slf4j
 public class RoomServiceImpl implements RoomService {
 
     private final RoomRepository roomRepository;
@@ -37,8 +42,8 @@ public class RoomServiceImpl implements RoomService {
     @Override
     @Transactional
     public Long createRoom(Long hostUserId, CreateRoomRequest request) {
-        // [검증] 지역 존재 여부 확인 (주석 해제 시 사용)
-        // validateLocationExists(request.getLocationId());
+        // [검증] 지역 존재 여부 확인
+        validateLocationExists(request.getLocationId());
 
         RoleAssignMode mode = (request.getRoleAssignMode() == null)
                 ? RoleAssignMode.RANDOM
@@ -64,9 +69,12 @@ public class RoomServiceImpl implements RoomService {
     }
 
     @Override
-    public Page<RoomDetailResponse> listRooms(RoomListRequest request, Pageable pageable) {
-        return roomRepository.findRooms(request.getLocationId(), request.getStatus(), pageable)
-                .map(roomConverter::toDetailResponse);
+    public Page<RoomListResponse> listRooms(
+            RoomListRequest request,
+            @PageableDefault(size = 10, sort = "createdAt", direction = Sort.Direction.DESC)Pageable pageable) {
+        // 목록 조회: 참여자 닉네임 없이 간단한 정보만 반환
+        Page<Room> roomPage = roomRepository.findRooms(request.getLocationId(), request.getStatus(), pageable);
+        return roomPage.map(roomConverter::toListResponse);
     }
 
     @Override
@@ -77,7 +85,6 @@ public class RoomServiceImpl implements RoomService {
                 .collect(Collectors.toSet());
 
         Map<Long, String> nicknameMap = userRepository.findNicknameMap(userIds);
-
         return roomConverter.toDetailResponse(room, nicknameMap);
     }
 
@@ -129,11 +136,9 @@ public class RoomServiceImpl implements RoomService {
                 .orElseThrow(() -> new BusinessException(RoomErrorCode.ROOM_NOT_FOUND));
     }
 
-    /*
     private void validateLocationExists(Long locationId) {
         if (!locationRepository.existsById(locationId)) {
             throw new BusinessException(RoomErrorCode.LOCATION_NOT_FOUND);
         }
     }
-    */
 }

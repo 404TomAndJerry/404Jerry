@@ -22,6 +22,7 @@ import lombok.Getter;
 import lombok.NoArgsConstructor;
 import org.hibernate.annotations.OnDelete;
 import org.hibernate.annotations.OnDeleteAction;
+import org.hibernate.annotations.UpdateTimestamp;
 import org.springframework.data.annotation.CreatedDate;
 import org.springframework.data.jpa.domain.support.AuditingEntityListener;
 
@@ -42,6 +43,7 @@ public class ChatMessage {
   private Long id;
 
   // 어느 채팅 룸(룸id)에 연결되었는지
+  // chatroom이 삭제되면 똑같이 삭제 된다.
   @ManyToOne(fetch = FetchType.LAZY)
   @JoinColumn(name = "chat_room_id", nullable = false)
   @OnDelete(action = OnDeleteAction.CASCADE)
@@ -59,5 +61,8 @@ public class ChatMessage {
   @CreatedDate
   @Column(name = "created_at", updatable = false)
   private LocalDateTime createdAt;
+
+  @UpdateTimestamp
+  private LocalDateTime deletedAt; // 개별 메시지 삭제용
 
 }

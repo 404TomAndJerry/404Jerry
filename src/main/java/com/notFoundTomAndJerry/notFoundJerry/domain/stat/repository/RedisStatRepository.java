@@ -51,7 +51,7 @@ public class RedisStatRepository {
   public void incrementAgeRolePlay(String ageGroup, PlayerRole role) {
     // HINCRBY stats:age:{ageGroup} {role} 1
     String key = KEY_PREFIX_AGE + ageGroup;
-    redisTemplate.opsForHash().increment(key, role, 1);
+    redisTemplate.opsForHash().increment(key, role.name(), 1);
   }
 
   // ==========================================

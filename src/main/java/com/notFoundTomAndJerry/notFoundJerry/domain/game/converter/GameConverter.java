@@ -8,7 +8,9 @@ import org.springframework.stereotype.Component;
 
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
+import java.util.Collections;
 import java.util.List;
+import java.util.Map;
 import java.util.stream.Collectors;
 
 /**
@@ -54,19 +56,23 @@ public class GameConverter {
 
     // ========== GamePlayer 관련 Response 변환 ==========
 
-    // GamePlayer → PlayerRoleResponse 변환 (개별 플레이어 역할)
-    public PlayerRoleResponse toRoleResponse(GamePlayer player) {
+    // GamePlayer → PlayerRoleResponse 변환 (개별 플레이어 역할, nickname 지정)
+    public PlayerRoleResponse toRoleResponse(GamePlayer player, String nickname) {
         return PlayerRoleResponse.builder()
                 .userId(player.getUserId())
                 .role(player.getRole())
-                .nickname(null) // TODO: User 도메인 연동 후 실제 닉네임으로 변경
+                .nickname(nickname != null ? nickname : "Unknown")
                 .build();
     }
 
-    // GamePlayer 목록 → PlayerRoleResponse 목록 변환
-    public List<PlayerRoleResponse> toRoleResponseList(List<GamePlayer> players) {
+    // GamePlayer 목록 → PlayerRoleResponse 목록 변환 (nicknameMap: userId → nickname)
+    public List<PlayerRoleResponse> toRoleResponseList(List<GamePlayer> players, Map<Long, String> nicknameMap) {
+        if (nicknameMap == null) {
+            nicknameMap = Collections.emptyMap();
+        }
+        final Map<Long, String> map = nicknameMap;
         return players.stream()
-                .map(this::toRoleResponse)
+                .map(p -> toRoleResponse(p, map.getOrDefault(p.getUserId(), "Unknown")))
                 .collect(Collectors.toList());
     }
 
@@ -82,12 +88,16 @@ public class GameConverter {
                 .build();
     }
 
-    // MVP 플레이어 목록 → MvpResultResponse 변환
-    public MvpResultResponse toMvpResultResponse(List<GamePlayer> mvpPlayers) {
+    // MVP 플레이어 목록 → MvpResultResponse 변환 (nicknameMap: userId → nickname)
+    public MvpResultResponse toMvpResultResponse(List<GamePlayer> mvpPlayers, Map<Long, String> nicknameMap) {
+        if (nicknameMap == null) {
+            nicknameMap = Collections.emptyMap();
+        }
+        final Map<Long, String> map = nicknameMap;
         List<MvpResultResponse.MvpPlayerDto> mvpPlayerDtos = mvpPlayers.stream()
                 .map(player -> MvpResultResponse.MvpPlayerDto.builder()
                         .userId(player.getUserId())
-                        .nickname("User_" + player.getUserId()) // TODO: User 도메인 연동 후 실제 닉네임으로 변경
+                        .nickname(map.getOrDefault(player.getUserId(), "User_" + player.getUserId()))
                         .build())
                 .collect(Collectors.toList());
 
@@ -98,12 +108,18 @@ public class GameConverter {
 
     // ========== GameResult 관련 Response 변환 ==========
 
-    // 게임 결과 전체 데이터 → GameResultResponse 변환
+    // 게임 결과 전체 데이터 → GameResultResponse 변환 (nicknameMap: userId → nickname)
     public GameResultResponse toGameResultResponse(
             Game game,
             List<GameResult> gameResults,
             List<GamePlayer> gamePlayers,
-            List<GamePlayer> mvpPlayers) {
+            List<GamePlayer> mvpPlayers,
+            Map<Long, String> nicknameMap) {
+
+        if (nicknameMap == null) {
+            nicknameMap = Collections.emptyMap();
+        }
+        final Map<Long, String> map = nicknameMap;
 
         // 승리 팀 결정 (첫 번째 승자의 역할로 판단)
         PlayerRole winnerTeam = gameResults.stream()
@@ -114,12 +130,12 @@ public class GameConverter {
 
         // MVP 닉네임 목록
         List<String> mvpUserNicknames = mvpPlayers.stream()
-                .map(player -> "User_" + player.getUserId()) // TODO: User 도메인 연동 후 실제 닉네임으로 변경
+                .map(player -> map.getOrDefault(player.getUserId(), "User_" + player.getUserId()))
                 .collect(Collectors.toList());
 
         // 플레이어별 결과 생성
         List<GameResultResponse.PlayerResultDto> playerResults = gameResults.stream()
-                .map(result -> toPlayerResultDto(result, gamePlayers))
+                .map(result -> toPlayerResultDto(result, gamePlayers, map))
                 .collect(Collectors.toList());
 
         return GameResultResponse.builder()
@@ -134,15 +150,18 @@ public class GameConverter {
     // GameResult → PlayerResultDto 변환 (내부 사용)
     private GameResultResponse.PlayerResultDto toPlayerResultDto(
             GameResult result,
-            List<GamePlayer> gamePlayers) {
+            List<GamePlayer> gamePlayers,
+            Map<Long, String> nicknameMap) {
 
         // 해당 플레이어의 MVP 여부 확인
         boolean isMvp = gamePlayers.stream()
                 .anyMatch(gp -> gp.getUserId().equals(result.getUserId()) && gp.getIsMvp());
 
+        String nickname = nicknameMap.getOrDefault(result.getUserId(), "User_" + result.getUserId());
+
         return GameResultResponse.PlayerResultDto.builder()
                 .userId(result.getUserId())
-                .nickname("User_" + result.getUserId()) // TODO: User 도메인 연동 후 실제 닉네임으로 변경
+                .nickname(nickname)
                 .role(result.getRole())
                 .isWinner(result.getIsWinner())
                 .isMvp(isMvp)

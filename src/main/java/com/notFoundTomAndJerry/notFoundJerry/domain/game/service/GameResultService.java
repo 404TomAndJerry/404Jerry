@@ -9,6 +9,7 @@ import com.notFoundTomAndJerry.notFoundJerry.domain.game.entity.enums.PlayerRole
 import com.notFoundTomAndJerry.notFoundJerry.domain.game.repository.GamePlayerRepository;
 import com.notFoundTomAndJerry.notFoundJerry.domain.game.repository.GameRepository;
 import com.notFoundTomAndJerry.notFoundJerry.domain.game.repository.GameResultRepository;
+import com.notFoundTomAndJerry.notFoundJerry.domain.user.repository.UserRepository;
 import com.notFoundTomAndJerry.notFoundJerry.global.exception.BusinessException;
 import com.notFoundTomAndJerry.notFoundJerry.global.exception.domain.GameErrorCode;
 import lombok.RequiredArgsConstructor;
@@ -16,7 +17,9 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
+import java.util.Map;
 import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 /**
  * 게임 결과 관리 서비스
@@ -32,8 +35,7 @@ public class GameResultService {
     private final GameRepository gameRepository;
     private final GamePlayerRepository gamePlayerRepository;
     private final GameConverter gameConverter;
-    // TODO: User 도메인 연동 후 주석 해제
-    // private final UserRepository userRepository;
+    private final UserRepository userRepository;
 
     // 게임 결과 저장, gameId 게임 ID, winnerTeam 승리 팀, endReason 종료 사유
     @Transactional
@@ -76,23 +78,16 @@ public class GameResultService {
         // MVP 플레이어 조회
         List<GamePlayer> mvpPlayers = gamePlayerRepository.findByGameIdAndIsMvpTrue(gameId);
 
-        // Response 생성 (Converter 사용)
-        return gameConverter.toGameResultResponse(game, gameResults, gamePlayers, mvpPlayers);
-    }
+        // User 닉네임 조회 (gameResults + gamePlayers의 userId 수집)
+        List<Long> userIds = Stream.concat(
+                        gameResults.stream().map(r -> r.getUserId()),
+                        gamePlayers.stream().map(GamePlayer::getUserId)
+                )
+                .distinct()
+                .collect(Collectors.toList());
+        Map<Long, String> nicknameMap = userRepository.findNicknameMap(userIds);
 
-    /* TODO: 사용자 통계 기능
-    // 사용자 통계 조회, userId 사용자 ID
-    public UserStatsDto getUserStats(Long userId) {
-        long totalGames = gameResultRepository.countByUserId(userId);
-        long winCount = gameResultRepository.countByUserIdAndIsWinnerTrue(userId);
-        double winRate = totalGames > 0 ? (double) winCount / totalGames * 100 : 0.0;
-        
-        return UserStatsDto.builder()
-            .userId(userId)
-            .totalGames(totalGames)
-            .winCount(winCount)
-            .winRate(winRate)
-            .build();
+        // Response 생성 (Converter 사용)
+        return gameConverter.toGameResultResponse(game, gameResults, gamePlayers, mvpPlayers, nicknameMap);
     }
-    */
 }

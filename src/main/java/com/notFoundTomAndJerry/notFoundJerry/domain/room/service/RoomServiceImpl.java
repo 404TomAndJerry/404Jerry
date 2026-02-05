@@ -1,5 +1,7 @@
 package com.notFoundTomAndJerry.notFoundJerry.domain.room.service;
 
+import com.notFoundTomAndJerry.notFoundJerry.domain.chat.entity.ChatRoom;
+import com.notFoundTomAndJerry.notFoundJerry.domain.chat.repository.ChatRoomRepository;
 import com.notFoundTomAndJerry.notFoundJerry.domain.location.repository.LocationRepository;
 import com.notFoundTomAndJerry.notFoundJerry.domain.room.converter.RoomConverter;
 import com.notFoundTomAndJerry.notFoundJerry.domain.room.dto.request.CreateRoomRequest;
@@ -38,6 +40,7 @@ public class RoomServiceImpl implements RoomService {
     private final LocationRepository locationRepository;
     private final UserRepository userRepository;
     private final RoomConverter roomConverter;
+    private final ChatRoomRepository chatRoomRepository;
 
     @Override
     @Transactional
@@ -64,6 +67,13 @@ public class RoomServiceImpl implements RoomService {
 
         room.addParticipant(hostUserId);
         roomRepository.save(room);
+
+        // 2. ChatRoom 직접 생성 및 저장
+        ChatRoom chatRoom = ChatRoom.builder()
+            .room(room) // @MapsId에 의해 room의 ID가 chatRoom의 ID로 복사됨
+            .build();
+
+        chatRoomRepository.save(chatRoom); // ChatRoom 별도 저장
 
         return room.getId();
     }

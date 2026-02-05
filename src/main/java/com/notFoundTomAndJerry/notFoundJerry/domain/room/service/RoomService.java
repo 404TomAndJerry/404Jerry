@@ -3,9 +3,11 @@ package com.notFoundTomAndJerry.notFoundJerry.domain.room.service;
 import com.notFoundTomAndJerry.notFoundJerry.domain.room.dto.request.CreateRoomRequest;
 import com.notFoundTomAndJerry.notFoundJerry.domain.room.dto.request.RoomListRequest;
 import com.notFoundTomAndJerry.notFoundJerry.domain.room.dto.response.JoinRoomResponse;
+import com.notFoundTomAndJerry.notFoundJerry.domain.room.dto.response.LocationWithRoomCountResponse;
 import com.notFoundTomAndJerry.notFoundJerry.domain.room.dto.response.RoomDetailResponse;
 import com.notFoundTomAndJerry.notFoundJerry.domain.room.dto.response.RoomListResponse;
 import com.notFoundTomAndJerry.notFoundJerry.domain.room.entity.enums.ParticipantRole;
+import java.util.List;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 
@@ -40,4 +42,10 @@ public interface RoomService {
      * 역할 변경 (MANUAL 모드 전용)
      */
     void changeRole(Long roomId, Long userId, ParticipantRole newRole);
+
+    /**
+     * 지도 마커용 데이터 조회 (영역 내 장소별 방 개수)
+     */
+    List<LocationWithRoomCountResponse> getMapMarkers(Double minLat, Double maxLat, Double minLng,
+        Double maxLng);
 }

@@ -4,6 +4,7 @@ import com.notFoundTomAndJerry.notFoundJerry.domain.room.dto.request.ChangeRoleR
 import com.notFoundTomAndJerry.notFoundJerry.domain.room.dto.request.CreateRoomRequest;
 import com.notFoundTomAndJerry.notFoundJerry.domain.room.dto.request.RoomListRequest;
 import com.notFoundTomAndJerry.notFoundJerry.domain.room.dto.response.JoinRoomResponse;
+import com.notFoundTomAndJerry.notFoundJerry.domain.room.dto.response.LocationWithRoomCountResponse;
 import com.notFoundTomAndJerry.notFoundJerry.domain.room.dto.response.RoomDetailResponse;
 import com.notFoundTomAndJerry.notFoundJerry.domain.room.dto.response.RoomListResponse;
 import com.notFoundTomAndJerry.notFoundJerry.domain.room.service.RoomService;
@@ -11,6 +12,7 @@ import com.notFoundTomAndJerry.notFoundJerry.global.security.CustomPrincipal;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
+import java.util.List;
 import lombok.RequiredArgsConstructor;
 import org.springdoc.core.annotations.ParameterObject;
 import org.springframework.data.domain.Page;
@@ -108,6 +110,19 @@ public class RoomController {
     ) {
         roomService.changeRole(roomId, targetUserId, request.getRole());
         return ResponseEntity.ok().build();
+    }
+
+    /**
+     * 지도 마커 조회 API 현재 지도 영역(Bounding Box) 내의 장소별 대기/게임 중인 방 개수를 반환
+     */
+    @GetMapping("/map-markers")
+    public List<LocationWithRoomCountResponse> getMapMarkers(
+        @RequestParam(name = "minLat", required = false, defaultValue = "30.0") Double minLat,
+        @RequestParam(name = "maxLat", required = false, defaultValue = "45.0") Double maxLat,
+        @RequestParam(name = "minLng", required = false, defaultValue = "120.0") Double minLng,
+        @RequestParam(name = "maxLng", required = false, defaultValue = "135.0") Double maxLng
+    ) {
+        return roomService.getMapMarkers(minLat, maxLat, minLng, maxLng);
     }
 
 }

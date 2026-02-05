@@ -7,6 +7,7 @@ import com.notFoundTomAndJerry.notFoundJerry.domain.room.converter.RoomConverter
 import com.notFoundTomAndJerry.notFoundJerry.domain.room.dto.request.CreateRoomRequest;
 import com.notFoundTomAndJerry.notFoundJerry.domain.room.dto.request.RoomListRequest;
 import com.notFoundTomAndJerry.notFoundJerry.domain.room.dto.response.JoinRoomResponse;
+import com.notFoundTomAndJerry.notFoundJerry.domain.room.dto.response.LocationWithRoomCountResponse;
 import com.notFoundTomAndJerry.notFoundJerry.domain.room.dto.response.RoomDetailResponse;
 import com.notFoundTomAndJerry.notFoundJerry.domain.room.dto.response.RoomListResponse;
 import com.notFoundTomAndJerry.notFoundJerry.domain.room.entity.Room;
@@ -17,6 +18,7 @@ import com.notFoundTomAndJerry.notFoundJerry.domain.room.repository.RoomReposito
 import com.notFoundTomAndJerry.notFoundJerry.domain.user.repository.UserRepository;
 import com.notFoundTomAndJerry.notFoundJerry.global.exception.BusinessException;
 import com.notFoundTomAndJerry.notFoundJerry.global.exception.domain.RoomErrorCode;
+import java.util.List;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.domain.Page;
@@ -122,6 +124,15 @@ public class RoomServiceImpl implements RoomService {
     public void changeRole(Long roomId, Long userId, ParticipantRole newRole) {
         Room room = findRoomById(roomId);
         room.changeParticipantRole(userId, newRole);
+    }
+
+    // 지도 마커 조회 로직
+    @Override
+    @Transactional(readOnly = true)
+    public List<LocationWithRoomCountResponse> getMapMarkers(Double minLat, Double maxLat,
+        Double minLng, Double maxLng) {
+        // Repository에 작성한 SUM(CASE WHEN...) 쿼리를 호출
+        return roomRepository.findAllWithRoomStatusCount(minLat, maxLat, minLng, maxLng);
     }
 
     // =================================================================

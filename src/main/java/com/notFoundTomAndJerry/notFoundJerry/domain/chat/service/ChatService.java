@@ -89,8 +89,7 @@ public class ChatService {
   }
 
   /**
-   * 게임 종료 시 채팅방 '내용' 초기화
-   * (방 엔티티는 살려두고, 메시지만 정리)
+   * 게임 종료 시 채팅방 '내용' 초기화 (방 엔티티는 살려두고, 메시지만 정리)
    */
   @Transactional
   public void resetChatRoom(Long roomId) {
@@ -106,10 +105,11 @@ public class ChatService {
 
   private ChatRoom getChatRoomId(Long roomId) {
     // 1. 방 존재 여부 먼저 확인 (방이 없으면 명확한 Custom Exception 발생)
-    ChatRoom room = chatRoomRepository.findById(roomId)
-        .orElseThrow(() -> new BusinessException(ChatErrorCode.CHAT_ROOM_NOT_FOUND_ID,
-            String.format(ChatErrorCode.CHAT_ROOM_NOT_FOUND_ID.getMessage(), roomId)));
-    return room;
+    return chatRoomRepository.findById(roomId)
+        .orElseGet(() -> {
+          // 예외를 던지는 대신 에러 로그만 남깁니다.
+          log.error("[Chat Error] 채팅방을 찾을 수 없습니다. Room ID: {}", roomId);
+          return null; // 호출한 곳에서 null 처리를 하도록 유도
+        });
   }
-
 }

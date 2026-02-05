@@ -24,6 +24,9 @@ public interface MvpVoteRepository extends JpaRepository<MvpVote, Long> {
     // 투표자가 이미 투표했는지 확인
     boolean existsByGameIdAndVoterId(Long gameId, Long voterId);
 
+    // 게임별 투표 수 (전원 투표 완료 여부 확인용)
+    long countByGameId(Long gameId);
+
     // 게임에서 특정 사용자가 받은 투표 수 카운트
     long countByGameIdAndTargetUserId(Long gameId, Long targetUserId);
 

@@ -208,7 +208,7 @@ public class Room {
         this.status = RoomStatus.FINISHED;
     }
 
-    public void transitionToWatting() {
+    public void transitionToWaiting() {
         if (this.status != RoomStatus.FINISHED) {
             throw new BusinessException(RoomErrorCode.INVALID_ROOM_STATUS);
         }

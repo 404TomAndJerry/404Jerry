@@ -13,8 +13,8 @@ import java.util.Optional;
 @Repository
 public interface GameRepository extends JpaRepository<Game, Long> {
 
-    // 방 ID로 게임 조회
-    Optional<Game> findByRoomId(Long roomId);
+    // 방 ID로 최신 게임 1건 조회 (한 방에 여러 게임 이력 있을 수 있음)
+    Optional<Game> findTopByRoomIdOrderByCreatedAtDesc(Long roomId);
 
     // 방 ID와 상태로 게임 조회
     Optional<Game> findByRoomIdAndStatus(Long roomId, GameStatus status);

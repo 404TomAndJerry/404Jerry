@@ -26,6 +26,7 @@ public enum GameErrorCode implements ApiCode {
     NO_PLAYERS_IN_GAME(HttpStatus.BAD_REQUEST.value(), 4003, "게임에 참여한 플레이어가 없습니다"),
     SELF_VOTE_NOT_ALLOWED(HttpStatus.BAD_REQUEST.value(), 4004, "자기 자신에게 투표할 수 없습니다"),
     VOTE_TARGET_REQUIRED(HttpStatus.BAD_REQUEST.value(), 4005, "투표 대상을 선택해주세요"),
+    VOTER_NOT_IN_GAME(HttpStatus.BAD_REQUEST.value(), 4006, "해당 게임 참가자만 MVP 투표할 수 있습니다"),
     
     // ========== 중복/충돌 관련 (409) ==========
     

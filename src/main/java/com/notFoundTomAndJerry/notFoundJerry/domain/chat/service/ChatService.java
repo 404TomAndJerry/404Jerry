@@ -6,8 +6,6 @@ import com.notFoundTomAndJerry.notFoundJerry.domain.chat.entity.ChatRoom;
 import com.notFoundTomAndJerry.notFoundJerry.domain.chat.repository.ChatMessageRedisRepository;
 import com.notFoundTomAndJerry.notFoundJerry.domain.chat.repository.ChatMessageRepository;
 import com.notFoundTomAndJerry.notFoundJerry.domain.chat.repository.ChatRoomRepository;
-import com.notFoundTomAndJerry.notFoundJerry.global.exception.BusinessException;
-import com.notFoundTomAndJerry.notFoundJerry.global.exception.domain.ChatErrorCode;
 import java.util.Collections;
 import java.util.List;
 import java.util.stream.Collectors;
@@ -16,6 +14,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.domain.Slice;
 import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Propagation;
 import org.springframework.transaction.annotation.Transactional;
 
 @Slf4j
@@ -91,16 +90,18 @@ public class ChatService {
   /**
    * 게임 종료 시 채팅방 '내용' 초기화 (방 엔티티는 살려두고, 메시지만 정리)
    */
-  @Transactional
+  @Transactional(propagation = Propagation.REQUIRES_NEW) // 별도 트랜잭션으로 분리
   public void resetChatRoom(Long roomId) {
-    // 방 존재 여부 먼저 확인
-    ChatRoom room = getChatRoomId(roomId);
-    // 1. Redis 캐시 삭제 (가장 중요 - 실시간 채팅창 클리어)
-    chatMessageRedisRepository.deleteChatRoom(room.getId());
-    // 2. DB 메시지 처리
-    chatMessageRepository.DeleteAllByRoomId(room.getId());
-    log.info("Redis 캐시 삭제, DB 메세지 삭제");
-
+    ChatRoom room = chatRoomRepository.findById(roomId).orElse(null);
+    if (room == null) {
+      return; // 안전하게 조기 종료
+    }
+    try {
+      chatMessageRedisRepository.deleteChatRoom(room.getId());
+      chatMessageRepository.DeleteAllByRoomId(room.getId());
+    } catch (Exception e) {
+      log.error("채팅 초기화 중 오류 발생했으나 게임 종료는 계속 진행: {}", e.getMessage());
+    }
   }
 
   private ChatRoom getChatRoomId(Long roomId) {

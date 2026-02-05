@@ -4,6 +4,7 @@ import com.notFoundTomAndJerry.notFoundJerry.domain.game.dto.response.*;
 import com.notFoundTomAndJerry.notFoundJerry.domain.game.entity.*;
 
 import com.notFoundTomAndJerry.notFoundJerry.domain.game.entity.enums.PlayerRole;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Component;
 
 import java.time.LocalDateTime;
@@ -16,6 +17,7 @@ import java.util.stream.Collectors;
 /**
  * Game 도메인 DTO 변환 통합 컨버터
  */
+@Slf4j
 @Component
 public class GameConverter {
 
@@ -87,23 +89,36 @@ public class GameConverter {
                 .message(message)
                 .build();
     }
-
     // MVP 플레이어 목록 → MvpResultResponse 변환 (nicknameMap: userId → nickname)
     public MvpResultResponse toMvpResultResponse(List<GamePlayer> mvpPlayers, Map<Long, String> nicknameMap) {
+        log.info("[컨버터 시작] MvpResultResponse 변환 시도. mvpPlayers 수: {}", (mvpPlayers != null ? mvpPlayers.size() : 0));
+
         if (nicknameMap == null) {
+            log.warn("[컨버터 경고] nicknameMap이 null로 넘어왔습니다. 빈 맵으로 대체합니다.");
             nicknameMap = Collections.emptyMap();
         }
-        final Map<Long, String> map = nicknameMap;
-        List<MvpResultResponse.MvpPlayerDto> mvpPlayerDtos = mvpPlayers.stream()
-                .map(player -> MvpResultResponse.MvpPlayerDto.builder()
-                        .userId(player.getUserId())
-                        .nickname(map.getOrDefault(player.getUserId(), "User_" + player.getUserId()))
-                        .build())
-                .collect(Collectors.toList());
 
-        return MvpResultResponse.builder()
-                .mvpPlayers(mvpPlayerDtos)
-                .build();
+        final Map<Long, String> map = nicknameMap;
+
+        List<MvpResultResponse.MvpPlayerDto> mvpPlayerDtos = mvpPlayers.stream()
+            .map(player -> {
+                String nickname = map.getOrDefault(player.getUserId(), "User_" + player.getUserId());
+                log.info("[컨버터 진행] 유저 변환 중 - userId: {}, nickname: {}", player.getUserId(), nickname);
+
+                return MvpResultResponse.MvpPlayerDto.builder()
+                    .userId(player.getUserId())
+                    .nickname(nickname)
+                    .build();
+            })
+            .collect(Collectors.toList());
+
+        MvpResultResponse response = MvpResultResponse.builder()
+            .mvpPlayers(mvpPlayerDtos)
+            .build();
+
+        log.info("[컨버터 완료] 최종 DTO 생성됨. 포함된 MVP 수: {}", mvpPlayerDtos.size());
+
+        return response;
     }
 
     // ========== GameResult 관련 Response 변환 ==========

@@ -11,6 +11,7 @@ import com.notFoundTomAndJerry.notFoundJerry.domain.user.repository.UserReposito
 import com.notFoundTomAndJerry.notFoundJerry.global.exception.BusinessException;
 import com.notFoundTomAndJerry.notFoundJerry.global.exception.domain.GameErrorCode;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -25,6 +26,7 @@ import java.util.stream.Collectors;
  * - 역할 배치 및 조회
  * - MVP 설정 및 조회
  */
+@Slf4j
 @Service
 @RequiredArgsConstructor
 @Transactional(readOnly = true)
@@ -100,6 +102,7 @@ public class GamePlayerService {
 
     // MVP 플레이어 조회, gameId 게임 ID
     public List<GamePlayer> getMvpPlayers(Long gameId) {
+        log.info("getMvpPlayers 부분임.");
         return gamePlayerRepository.findByGameIdAndIsMvpTrue(gameId);
     }
 

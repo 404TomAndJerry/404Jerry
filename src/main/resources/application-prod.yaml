@@ -8,7 +8,7 @@ spring:
 
   # 1. 데이터베이스 설정
   datasource:
-    url: ${DB_URL}
+    url: jdbc:mysql://${DB_HOST}:${DB_PORT:3306}/${DB_NAME}?useSSL=false&allowPublicKeyRetrieval=true
     username: ${DB_USER}
     password: ${DB_PASSWORD}
     driver-class-name: com.mysql.cj.jdbc.Driver
@@ -31,7 +31,7 @@ spring:
   data:
     redis:
       host: ${REDIS_HOST}
-      port: 6379
+      port: ${REDIS_PORT}
 
   # 4. OAuth2 설정
   security:

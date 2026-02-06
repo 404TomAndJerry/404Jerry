@@ -4,6 +4,7 @@
 .gradle/
 build/
 !gradle/wrapper/gradle-wrapper.jar
+!gradle-wrapper.jar  # 이 녀석만큼은 예외로 추적한다!
 
 ############################
 # IDEs

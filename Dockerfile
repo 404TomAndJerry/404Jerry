@@ -10,12 +10,14 @@ FROM gradle:8.5-jdk17-alpine AS builder
 # 작업 디렉토리 설정
 WORKDIR /app
 
-# 빌드 성능 최적화: Gradle 래퍼 및 의존성 파일 먼저 복사
-# 이렇게 하면 소스코드 변경 시에도 의존성 다운로드는 캐시 활용 가능
-COPY gradle/ gradle/
-COPY gradlew build.gradle settings.gradle ./
+# 1. 실행 파일과 설정 파일을 먼저 복사
+COPY gradlew ./
+COPY build.gradle settings.gradle ./
 
-# Gradle 래퍼 실행 권한 부여
+# 2. Gradle 래퍼 폴더 전체 복사 (안에 있는 .jar 파일을 가져오기 위함)
+COPY gradle/ gradle/
+
+# 3. 권한 부여 및 의존성 다운로드
 RUN chmod +x ./gradlew
 
 # 의존성 사전 다운로드 (Docker 레이어 캐싱 최적화)

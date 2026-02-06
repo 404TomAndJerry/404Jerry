@@ -73,5 +73,22 @@ public class RedisConfig {
   public ChannelTopic channelTopic() {
     return new ChannelTopic("chat:rooms");
   }
+  @Bean
+    public LettuceConnectionFactory redisConnectionFactory() {
+        RedisStandaloneConfiguration redisConfig = new RedisStandaloneConfiguration();
+        // yml/properties에서 자동으로 읽어오지만, 명시적으로 넣어도 OK
+        // redisConfig.setHostName("redis");
+        // redisConfig.setPort(6379);
+        // redisConfig.setPassword(RedisPassword.of("RedisPassword123!"));
+
+        // 핵심: RESP2 강제 지정
+        LettuceClientConfiguration clientConfig = LettuceClientConfiguration.builder()
+                .clientOptions(ClientOptions.builder()
+                        .protocolVersion(ProtocolVersion.RESP2)  // ← 이 한 줄로 해결!
+                        .build())
+                .build();
+
+        return new LettuceConnectionFactory(redisConfig, clientConfig);
+    }
 
 }

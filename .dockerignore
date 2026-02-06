@@ -238,3 +238,4 @@ sample-data/
 # 수정 설정 (Wrapper Jar는 포함시키고 나머지는 무시)
 **/build/
 !**/gradle/wrapper/gradle-wrapper.jar
+!gradle/wrapper/gradle-wrapper.jar

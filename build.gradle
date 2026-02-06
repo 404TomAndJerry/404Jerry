@@ -75,3 +75,14 @@ dependencies {
 tasks.named('test') {
     useJUnitPlatform()
 }
+
+// 여기서부터 추가하세요!
+// Jar 패키징 시 중복 파일이 발생하면 첫 번째 파일만 남기고 제외함
+tasks.withType(Jar) {
+    duplicatesStrategy = DuplicatesStrategy.EXCLUDE
+}
+
+// Spring Boot의 executable jar 생성 시에도 동일하게 적용
+tasks.named('bootJar') {
+    duplicatesStrategy = DuplicatesStrategy.EXCLUDE
+}

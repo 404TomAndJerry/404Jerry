@@ -224,11 +224,17 @@ gc.log*
 .stylelintrc*
 sonar-project.properties
 
+# ===============================================================
+# 커스텀 제외 파일 (프로젝트별로 추가)
+# ===============================================================
+# 예: 특정 개발자 전용 스크립트
 scripts/dev/
 scripts/local/
 
+# 예: 대용량 테스트 데이터  
 testdata/
 sample-data/
 
-lib/
-libs/
+# 수정 설정 (Wrapper Jar는 포함시키고 나머지는 무시)
+**/build/
+!**/gradle/wrapper/gradle-wrapper.jar

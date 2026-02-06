@@ -1,6 +1,6 @@
 spring:
   profiles:
-    active: dev # 기본값을 dev로 설정하면 로컬에서 실행할 때 편리해요.
+    active: prod # 기본값을 dev로 설정하면 로컬에서 실행할 때 편리해요.
   # 공통 설정 (애플리케이션 이름 등)
   application:
     name: 404Jerry

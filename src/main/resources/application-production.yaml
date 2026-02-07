@@ -98,15 +98,6 @@ jwt:
   access-token-expiration: 1800000      # 30분
   refresh-token-expiration: 604800000   # 7일
 
-# 서버 설정
-server:
-  port: 8080
-  servlet:
-    encoding:
-      charset: UTF-8
-      enabled: true
-      force: true
-
 # 로깅 설정
 logging:
   level:
@@ -123,3 +114,11 @@ public-data:
   api:
     url: ${PUBLIC_DATA_URL}
     key: ${PUBLIC_DATA_KEY}
+# 서버 설정
+server:
+  port: 8080
+  servlet:
+    encoding:
+      charset: UTF-8
+      enabled: true
+      force: true

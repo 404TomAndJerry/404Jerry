@@ -40,7 +40,7 @@ spring:
           max-active: 8
           min-idle: 2
         shutdown-timeout: 3000ms
-
+  
   # 4. OAuth2 설정
   security:
     oauth2:
@@ -80,7 +80,13 @@ spring:
             token-uri: https://kauth.kakao.com/oauth/token
             user-info-uri: https://kapi.kakao.com/v2/user/me
             user-name-attribute: id
-
+management:
+  endpoint:
+    health:
+      show-details: always
+  health:
+    redis:
+      enabled: true
 # --------------------------------------------------
 # 외부 라이브러리 및 독자 설정 (spring 계층 밖)
 # --------------------------------------------------

@@ -16,7 +16,8 @@ spring:
   # 2. JPA & Hibernate 설정
   jpa:
     hibernate:
-      ddl-auto: validate
+      ddl-auto: update
+
     properties:
       hibernate:
         dialect: org.hibernate.dialect.MySQLDialect
@@ -30,8 +31,9 @@ spring:
   # 3. Redis 설정
   data:
     redis:
-      host: ${REDIS_HOST}
+      host: 172.20.0.20
       port: ${REDIS_PORT}
+      password: ${REDIS_PASSWORD}
 
   # 4. OAuth2 설정
   security:
@@ -84,15 +86,6 @@ jwt:
   access-token-expiration: 1800000      # 30분
   refresh-token-expiration: 604800000   # 7일
 
-# 서버 설정
-server:
-  port: 8080
-  servlet:
-    encoding:
-      charset: UTF-8
-      enabled: true
-      force: true
-
 # 로깅 설정
 logging:
   level:
@@ -109,3 +102,12 @@ public-data:
   api:
     url: ${PUBLIC_DATA_URL}
     key: ${PUBLIC_DATA_KEY}
+
+# 서버 설정
+server:
+  port: 8080
+  servlet:
+    encoding:
+      charset: UTF-8
+      enabled: true
+      force: true

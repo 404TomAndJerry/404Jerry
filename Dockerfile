@@ -17,6 +17,8 @@ COPY build.gradle settings.gradle ./
 # 2. Gradle 래퍼 폴더 전체 복사 (안에 있는 .jar 파일을 가져오기 위함)
 COPY gradle/ gradle/
 
+RUN gradle wrapper --gradle-version 8.5
+
 # [디버깅 추가] 복사된 파일의 크기를 로그에 출력
 RUN ls -l /app/gradle/wrapper/gradle-wrapper.jar
 

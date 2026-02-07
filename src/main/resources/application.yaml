@@ -4,3 +4,9 @@ spring:
   # 공통 설정 (애플리케이션 이름 등)
   application:
     name: 404Jerry
+    
+logging:
+  level:
+    org.springframework.boot.actuate.redis: DEBUG
+    io.lettuce.core: DEBUG
+    org.springframework.data.redis: DEBUG

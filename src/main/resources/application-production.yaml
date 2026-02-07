@@ -30,7 +30,7 @@ spring:
   # 3. Redis 설정
   data:
     redis:
-      host: ${REDIS_HOST}
+      host: 172.20.0.20
       port: ${REDIS_PORT}
       password: ${REDIS_PASSWORD}
       timeout: 10s                    # ← Lettuce 전체 timeout
